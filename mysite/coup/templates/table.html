@@ -1,0 +1,26 @@
+{% extends "base_generic.html" %}
+{% block content %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coup</title>
+</head>
+<body>
+
+{% load static %}
+
+{% for player in players %}
+
+<p><strong></strong> {{player.playerName}} has {{player.coins}} coins</p>
+{% for card in player.hand.all %}
+{% if  card.status == 'U'  or user.get_username ==  player.playerName%}
+<img src="/static/images/{{card}}.jpg" {{card}}>
+{% else %}
+<img src="/static/images/down.png" {{card}}>
+{% endif %}
+{% endfor %}</p>
+{% endfor %}
+
+</body>
+</html>
+{% endblock %}
