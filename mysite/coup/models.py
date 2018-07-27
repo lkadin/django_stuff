@@ -2,12 +2,57 @@ from django.db import models
 from django.db.models import Max
 import random
 
+class ActionHistory(models.Model):
+    name = models.CharField(max_length=20, default="Assassinate")
+    tran_date=models.DateTimeField(auto_now_add=True, blank=True)
+    player1 = models.CharField(max_length=20, default="Lee")
+    player2 = models.CharField(max_length=20, default="Lee")
 
 class Action(models.Model):
     name = models.CharField(max_length=20, default="Assassinate")
+    player2_required=models.BooleanField(default=False)
+
 
     def __str__(self):
         return self.name
+
+    def action(self,player,player2=None):
+        game=Game.objects.all()[0]
+        self.player=player
+        self.player2=player2
+        game.current_action = self.name
+        game.current_player1=self.player.playerName
+        game.save()
+        self.redo=False
+        if self.name == "Income":
+            player.addCoins(1)
+        elif self.name == "Foreign Aid":
+            player.addCoins(2)
+        elif self.name == "Take 3 coins":
+            player.addCoins(3)
+        elif self.name == "Steal":
+            self.steal(self.player)
+        elif self.name == 'Assassinate':
+            if player.coins<3:
+                self.redo = "You don't have enough coins"
+            else:
+                player.loseCoins(3)
+        elif self.name == "Draw":
+            self.draw(player)
+        elif self.name == 'Coup':
+            if player.coins<7:
+                self.redo = "You don't have enough coins"
+            else:
+                pass
+                # player.loseCoins(7)
+        elif self.name == 'Challenge':  # assassinate and steal??
+            pass
+        player.save()
+        if not self.redo:
+            actionhistory=ActionHistory(name=self.name,player1=player.playerName)
+            actionhistory.save()
+        return self.redo
+
 
 
 class Card(models.Model):
@@ -54,7 +99,7 @@ class Player(models.Model):
 
     def influence(self):
         cnt = 0
-        for card in self.hand:
+        for card in self.hand.all():
             if card.status == "D":
                 cnt += 1
         return cnt
@@ -75,7 +120,9 @@ class Deck(models.Model):
             r = random.randint(0, i)
             self.card1=self.cards.filter(shuffle_order=i)[0]
             self.card2=self.cards.filter(shuffle_order=r)[0]
-            self.card1.shuffle_order,self.card1.shuffle_order=self.card2.shuffle_order,self.card1.shuffle_order
+            self.card1.shuffle_order,self.card2.shuffle_order=self.card2.shuffle_order,self.card1.shuffle_order
+            self.card1.save()
+            self.card2.save()
 
     def drawCard(self):
         self.maxcard=CardInstance.objects.all().aggregate(Max('shuffle_order'))
@@ -84,11 +131,13 @@ class Deck(models.Model):
         self.draw.shuffle_order=None
         self.cards.remove(self.draw)
         self.draw.save()
-        # self.cards.save()
         return self.draw
 class Game(models.Model):
     NUM_OF_CARDS = models.IntegerField(default=2)
     whoseTurn = models.IntegerField(default=0)
+    current_action = models.CharField(max_length=20,null=True,blank=True)
+    current_player1 = models.CharField(max_length=20,null=True,blank=True)
+    current_player2 = models.CharField(max_length=20,null=True,blank=True)
 
     def del_card_instances(self):
         CardInstance.objects.all().delete()
@@ -103,10 +152,9 @@ class Game(models.Model):
                 card.save()
 
     def initialize(self):
+        ActionHistory.objects.all().delete()
         self.del_card_instances()
         self.build_cards()
-
-        # deck = Deck.objects.get(id=1)
         deck = Deck(id=1)
         deck.save()
         deck.build()
@@ -118,14 +166,14 @@ class Game(models.Model):
 
 
     def initialDeal(self):
-        self.deck = Deck.objects.get(id=1)
-        # self.deck = Deck(id=1)
+        self.deck = Deck.objects.all()[0]
         self.deck.shuffle()
         self.deck.save()
         players=Player.objects.all()
         for i in range(self.NUM_OF_CARDS):
             for player in players:
                 player.hand.add(self.deck.drawCard())
+                self.deck.save()
 
     def add_all_players(self):
         player=Player(playerName="Lee",playerNumber=0)
@@ -136,3 +184,28 @@ class Game(models.Model):
         player.save()
         player=Player(playerName="Jamie",playerNumber=3)
         player.save()
+
+    def nextTurn(self):
+        self.whoseTurn=(self.whoseTurn+1) % 4
+
+    def currentPlayerName(self):
+        self.players=[self.player for self.player in Player.objects.all()]
+        return self.players[self.whoseTurn].playerName
+
+    def ck_winner(self):
+        self.players = Player.objects.all()
+        count = 0
+        for self.player in self.players:
+            if self.player.influence() > 0:
+                count += 1
+                self.winner = self.player.playerName
+        if count == 1:
+            # self.message("Game over - {} wins".format(winner))
+            return self.winner
+    def getPlayerFromPlayerName(self,playerName):
+        return Player.objects.get(playerName=playerName)
+
+    def clearCurrent(self):
+        self.current_action=None
+        self.current_player1=None
+        self.current_player2=None
