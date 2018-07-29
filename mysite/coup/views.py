@@ -122,10 +122,15 @@ def actions(request):
         except:
             pass
         try:
-            discard = request.POST.get('cardname')
-            player.discard(discard)
-            player.save()
-            return render(request, 'discard_result.html', {'action': action,'discard':discard,'player':player})
+            discards=(request.POST.getlist('cardnames'))
+            for discard in discards:
+                player.discard(discard)
+                player.save()
+                game.nextTurn()
+                game.clearCurrent()
+                game.save()
+            return redirect(showTable)
+            # return render(request, 'discard_result.html', {'action': action,'discard':discard,'player':player})
         except:
             pass
         player = game.getPlayerFromPlayerName(game.current_player1)

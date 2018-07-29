@@ -8,13 +8,16 @@
 <body>
 
 <p>Show deck....</p>
-{% for deck in decks %}
 
-<p><strong></strong> {{deck.shuffle_order}} </p>
+<p>
 {% for card in deck.cards.all %}
-{{card}} {{card.shuffle_order}}
-{% endfor %}</p>
-{% endfor %}
+{% if card.shuffle_order != None %}
+{{ card }} {{card.shuffle_order}}
+{% endif %}
+    {% endfor %}</p>
+<p>    {{cardsremaining}}  cards remaining</p>
+
+
 
 </body>
 </html>

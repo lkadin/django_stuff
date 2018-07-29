@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Player</title>
+</head>
+<body>
+<form action="actions" method="post">{% csrf_token %}
+            <select id="playerselect" name="name">
+                {% for player in players %}
+                <option value="{{ player.playerName }}">{{ player.playerName }}</option>
+                {% endfor %}
+             </select>
+    <input type="submit" value="Submit">
+</form>
+</body>
+</html>
+

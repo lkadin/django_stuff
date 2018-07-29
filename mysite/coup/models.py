@@ -2,6 +2,11 @@ from django.db import models
 from django.db.models import Max
 import random
 
+class Function(models.Model):
+    methodName = models.CharField(max_length=20,blank=True,null=True)
+    arguments = models.TextField()
+    action = models.ForeignKey("Action",on_delete=models.CASCADE,default=0)
+
 class ActionHistory(models.Model):
     name = models.CharField(max_length=20, default="Assassinate")
     tran_date=models.DateTimeField(auto_now_add=True, blank=True)
@@ -11,8 +16,6 @@ class ActionHistory(models.Model):
 class Action(models.Model):
     name = models.CharField(max_length=20, default="Assassinate")
     player2_required=models.BooleanField(default=False)
-
-
     def __str__(self):
         return self.name
 
@@ -38,7 +41,7 @@ class Action(models.Model):
             else:
                 player.loseCoins(3)
         elif self.name == "Draw":
-            self.draw(player)
+            player.draw()
         elif self.name == 'Coup':
             if player.coins<7:
                 self.redo = "You don't have enough coins"
@@ -64,7 +67,7 @@ class Card(models.Model):
         return self.cardName
 
 class CardInstance(models.Model):
-    import uuid
+    # import uuid
     """
     Model representing a specific card 
     """
@@ -103,12 +106,43 @@ class Player(models.Model):
             if card.status == "D":
                 cnt += 1
         return cnt
+    def draw(self):
+        if len(self.hand.all())<4:
+            self.deck = Deck.objects.all()[0]
+            self.hand.add(self.deck.drawCard())
+            self.hand.add(self.deck.drawCard())
+
+    def discard(self,cardname):
+        self.cardname=cardname
+        self.card_id=Card.objects.filter(cardName=cardname)[0].id
+        self.card=self.hand.filter(card_id=self.card_id)[0]
+        self.deck = Deck.objects.all()[0]
+        self.deck.returnCard(self.card)
+        self.hand.remove(self.card)
+        self.deck.save()
+
+    def cardcount(self):
+        return len(self.hand.all())
 
 class Deck(models.Model):
     cards = models.ManyToManyField(CardInstance)
 
     def __str__(self):
         return ("Deck")
+
+    def cardsremaining(self):
+        self.cnt=0
+        for self.card in self.cards.all():
+            if self.card.shuffle_order != None:
+                self.cnt+=1
+        return self.cnt
+
+    def cardsavailable(self):
+        self.cardsavail=[]
+        for self.card in self.cards.all():
+            if self.card.shuffle_order != None:
+                self.cardsavail.append(self.card)
+        return self.cardsavail
 
     def build(self):
         cis = CardInstance.objects.all()
@@ -127,11 +161,20 @@ class Deck(models.Model):
     def drawCard(self):
         self.maxcard=CardInstance.objects.all().aggregate(Max('shuffle_order'))
         self.max=self.maxcard['shuffle_order__max']
-        self.draw=CardInstance.objects.get(shuffle_order=self.max)
-        self.draw.shuffle_order=None
-        self.cards.remove(self.draw)
-        self.draw.save()
-        return self.draw
+        self.card=CardInstance.objects.get(shuffle_order=self.max)
+        self.card.shuffle_order=None
+        # self.cards.remove(self.card)
+        self.card.save()
+        return self.card
+
+    def returnCard(self,card):
+        self.card=card
+        self.maxcard = CardInstance.objects.all().aggregate(Max('shuffle_order'))
+        self.max=self.maxcard['shuffle_order__max']+1
+        self.card.shuffle_order=self.max
+        self.card.save()
+
+
 class Game(models.Model):
     NUM_OF_CARDS = models.IntegerField(default=2)
     whoseTurn = models.IntegerField(default=0)

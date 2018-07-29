@@ -24,3 +24,7 @@ urlpatterns += [
 urlpatterns += [
     path('shuffle', views.shuffle, name='shuffle'),
     ]
+
+urlpatterns += [
+    path('actions', views.actions, name='actions'),
+    ]

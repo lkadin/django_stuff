@@ -8,19 +8,34 @@
 <body>
 
 {% load static %}
-
+<table class="table">
+    <td>
 {% for player in players %}
-
-<p><strong></strong> {{player.playerName}} has {{player.coins}} coins</p>
-{% for card in player.hand.all %}
-{% if  card.status == 'U'  or user.get_username ==  player.playerName%}
-<img src="/static/images/{{card}}.jpg" {{card}}>
+<tr>
+    <td><strong> {{player.playerName}} has {{player.coins}} coins  </strong></td>
+</tr>
+{% for  card in player.hand.all %}
+{% if card.status == 'U' or user.get_username == player.playerName%}
+<td><img src="/static/images/{{card}}.jpg" height="350"></td>
 {% else %}
-<img src="/static/images/down.png" {{card}}>
+<td><img src="/static/images/down.png" height="350"></td>
 {% endif %}
-{% endfor %}</p>
+
 {% endfor %}
+
+
+{% endfor %}
+    </tbody>
+  </table>
+
+<script>
+    window.setTimeout(function () {
+    location.reload();
+}, 5000); // refresh/redirect after 5 seconds.
+
+</script>
 
 </body>
 </html>
 {% endblock %}
+
