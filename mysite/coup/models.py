@@ -26,7 +26,7 @@ class Action(models.Model):
         game.current_action = self.name
         game.current_player1=self.player.playerName
         game.save()
-        self.redo=False
+        self.redoMessage=None
         if self.name == "Income":
             player.addCoins(1)
         elif self.name == "Foreign Aid":
@@ -37,24 +37,25 @@ class Action(models.Model):
             self.steal(self.player)
         elif self.name == 'Assassinate':
             if player.coins<3:
-                self.redo = "You don't have enough coins"
+                self.redoMessage = "You don't have enough coins"
             else:
                 player.loseCoins(3)
         elif self.name == "Draw":
             player.draw()
+            self.redoMessage=None
         elif self.name == 'Coup':
             if player.coins<7:
-                self.redo = "You don't have enough coins"
+                self.redoMessage = "You don't have enough coins"
             else:
                 pass
                 # player.loseCoins(7)
         elif self.name == 'Challenge':  # assassinate and steal??
             pass
         player.save()
-        if not self.redo:
-            actionhistory=ActionHistory(name=self.name,player1=player.playerName)
-            actionhistory.save()
-        return self.redo
+        # if  self.redoMessage != None:
+        actionhistory=ActionHistory(name=self.name,player1=player.playerName)
+        actionhistory.save()
+        return self.redoMessage
 
 
 
@@ -111,6 +112,9 @@ class Player(models.Model):
             self.deck = Deck.objects.all()[0]
             self.hand.add(self.deck.drawCard())
             self.hand.add(self.deck.drawCard())
+            game=Game.objects.all()[0]
+            game.discardRequired=True
+            game.save()
 
     def discard(self,cardname):
         self.cardname=cardname
@@ -120,6 +124,9 @@ class Player(models.Model):
         self.deck.returnCard(self.card)
         self.hand.remove(self.card)
         self.deck.save()
+        game = Game.objects.all()[0]
+        game.discardRequired = True
+        game.save()
 
     def cardcount(self):
         return len(self.hand.all())
@@ -181,6 +188,9 @@ class Game(models.Model):
     current_action = models.CharField(max_length=20,null=True,blank=True)
     current_player1 = models.CharField(max_length=20,null=True,blank=True)
     current_player2 = models.CharField(max_length=20,null=True,blank=True)
+    redo = models.BooleanField(default=True)
+    redoMessage = models.CharField(max_length=30,blank=True,null=True)
+    discardRequired = models.BooleanField(default=False)
 
     def del_card_instances(self):
         CardInstance.objects.all().delete()
@@ -245,10 +255,15 @@ class Game(models.Model):
         if count == 1:
             # self.message("Game over - {} wins".format(winner))
             return self.winner
-    def getPlayerFromPlayerName(self,playerName):
-        return Player.objects.get(playerName=playerName)
+
 
     def clearCurrent(self):
         self.current_action=None
         self.current_player1=None
         self.current_player2=None
+        self.redo=False
+        self.redoMessage=None
+        self.discardRequired=False
+
+    def getPlayerFromPlayerName(self,playerName):
+        return Player.objects.get(playerName=playerName)

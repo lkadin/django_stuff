@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory
 from django.contrib.auth.mixins import LoginRequiredMixin
+from .action import get_initial_action_data, checkTurn, playerRequired, discardRequired
 import random
 
 
@@ -67,11 +68,11 @@ def showTable(request):
 
 def showDeck(request):
     deck = Deck.objects.all()[0]
-    cardsremaining=deck.cardsremaining()
+    cardsremaining = deck.cardsremaining()
     return render(
         request,
         'show_deck.html',
-        context={'deck': deck,'cardsremaining':cardsremaining}
+        context={'deck': deck, 'cardsremaining': cardsremaining}
     )
 
 
@@ -99,62 +100,27 @@ def shuffle(request):
 
 
 def actions(request):
-    players = Player.objects.all()
+
+    # checkTurn(request)
     game = Game.objects.all()[0]
-    action=game.current_action
-    if request.method == 'GET':
-        playerName = request.GET.get('playerName', None)
-        player = Player.objects.get(playerName=playerName)
-        action = request.GET.get('action', None)
-        player2=None
-        game.current_player1 = player.playerName
-        game.save()
+    # if not checkTurn(request):
+    #     return render(request, 'redo.html', {'redo': "Not your turn"})
 
-    if request.method == 'POST':
-        try:
-            playerName2 = request.POST.get('name')
-            playerName1 = game.current_player1
-            player = Player.objects.get(playerName=playerName1)
-            player2 = Player.objects.get(playerName=playerName2)
-            player_required = False
-            game.current_player2 = player2.playerName
-            game.save()
-        except:
-            pass
-        try:
-            discards=(request.POST.getlist('cardnames'))
-            for discard in discards:
-                player.discard(discard)
-                player.save()
-                game.nextTurn()
-                game.clearCurrent()
-                game.save()
-            return redirect(showTable)
-            # return render(request, 'discard_result.html', {'action': action,'discard':discard,'player':player})
-        except:
-            pass
+    get_initial_action_data(request)
+    if playerRequired():
+        players = Player.objects.all()
+        return render(request, 'player.html', {'players': players})
+    #
+    elif discardRequired():
+        game = Game.objects.all()[0]
         player = game.getPlayerFromPlayerName(game.current_player1)
-        playerName = player.playerName
-
-    if request.user.username != playerName:
-        return render(request, 'not_your_turn.html', {'action': action})
-
-    nextAction = Action.objects.get(name=action)
-    player_required = nextAction.player2_required
-
-    if player_required and player2==None:
-        return render(request, 'player.html', {'players': players, 'action': action})
-    else:
-        player2=None
-
-    redo = nextAction.action(player, player2)
-    if player.cardcount()>2:
-        return  render(request, 'discard.html',{'player': player, 'action': action,'cards':player.hand.all()})
-        player.save()
-    if not redo :
-        game.nextTurn()
-        game.clearCurrent()
-        game.save()
-        return redirect(showTable)
-    else:
-        return render(request, 'redo.html', {'redo': redo})
+        return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
+    #
+    # if  game.redoMessage != None:
+    #     # return render(request, 'redo.html', {'redo': game.redoMessage})
+    #     return
+    if game.redoMessage == None:
+            game.nextTurn()
+            game.clearCurrent()
+            game.save()
+            return redirect(showTable)
