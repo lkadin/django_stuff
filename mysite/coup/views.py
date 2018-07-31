@@ -26,7 +26,7 @@ def index(request):
             'no_more.html')
 
 
-def startGame(request):
+def startgame():
     game = Game.objects.get(id=80)
     game.initialize()
     game.clearCurrent()
@@ -36,17 +36,17 @@ def startGame(request):
     deck = Deck(id=1)
     deck.save()
     deck.build()
-    players = Player.objects.all()
-    game = Game.objects.all()
-    actions = Action.objects.all()
-    return redirect(showTable)
+    # players = Player.objects.all()
+    # game = Game.objects.all()
+    # actions = Action.objects.all()
+    return redirect(showtable)
     # request,
     # 'table.html',
     # context={'players': players,'actions':actions,'game':game}
     # )
 
 
-def showTable(request):
+def showtable(request):
     players = Player.objects.all()
     actions = Action.objects.all()
     actionhistory = ActionHistory.objects.all().order_by('-id')[:4]
@@ -66,7 +66,7 @@ def showTable(request):
         )
 
 
-def showDeck(request):
+def showdeck(request):
     deck = Deck.objects.all()[0]
     cardsremaining = deck.cardsremaining()
     return render(
@@ -76,7 +76,7 @@ def showDeck(request):
     )
 
 
-def initialDeal(request):
+def initialdeal(request):
     game = Game.objects.get(id=80)
     players = Player.objects.all()
     game.initialDeal()
@@ -103,24 +103,20 @@ def actions(request):
 
     # checkTurn(request)
     game = Game.objects.all()[0]
-    # if not checkTurn(request):
-    #     return render(request, 'redo.html', {'redo': "Not your turn"})
+    if not checkTurn(request):
+        return render(request, 'redo.html', {'redo': "Not your turn"})
 
     get_initial_action_data(request)
+
     if playerRequired():
         players = Player.objects.all()
         return render(request, 'player.html', {'players': players})
-    #
     elif discardRequired():
         game = Game.objects.all()[0]
         player = game.getPlayerFromPlayerName(game.current_player1)
         return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
-    #
-    # if  game.redoMessage != None:
-    #     # return render(request, 'redo.html', {'redo': game.redoMessage})
-    #     return
-    if game.redoMessage == None:
+    if game.redoMessage is None:
             game.nextTurn()
             game.clearCurrent()
             game.save()
-            return redirect(showTable)
+            return redirect(showtable)
