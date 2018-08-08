@@ -7,18 +7,18 @@ urlpatterns = [
 ]
 
 urlpatterns += [
-    path('start', views.startGame, name='startGame'),
+    path('start', views.startgame, name='startGame'),
     ]
 urlpatterns += [
-    path('showTable', views.showTable, name='showTable'),
-    ]
-
-urlpatterns += [
-    path('showDeck', views.showDeck, name='showDeck'),
+    path('showTable', views.showtable, name='showTable'),
     ]
 
 urlpatterns += [
-    path('initialDeal', views.initialDeal, name='initialDeal'),
+    path('showDeck', views.showdeck, name='showDeck'),
+    ]
+
+urlpatterns += [
+    path('initialDeal', views.initialdeal, name='initialDeal'),
     ]
 
 urlpatterns += [

@@ -1,17 +1,17 @@
-from django.http import HttpResponse
+# from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .action import get_initial_action_data, checkTurn, playerRequired, discardRequired
+# from django.contrib.auth.mixins import LoginRequiredMixin
+from .action import get_initial_action_data, ck_turn, playerRequired
 import random
 
 
 def index(request):
     players = Player.objects.all()
-    try:
-        names = [player.playerName for player in players]
-    except:
-        names = []
+    # try:
+    names = [player.playerName for player in players]
+    # except:
+    #     names = []
     if len(players) <= 4:
         if request.user.username not in names and request.user.username:
             player = Player(playerName=request.user.username)
@@ -26,8 +26,8 @@ def index(request):
             'no_more.html')
 
 
-def startgame():
-    game = Game.objects.get(id=80)
+def startgame(request):
+    game = Game(id=1)
     game.initialize()
     game.clearCurrent()
     game.whoseTurn = random.randint(0, 3)
@@ -51,12 +51,18 @@ def showtable(request):
     actions = Action.objects.all()
     actionhistory = ActionHistory.objects.all().order_by('-id')[:4]
     game = Game.objects.all()[0]
+    # game.redoMessage = None
+    # game.save()
+    cards = []
+    for player in players:
+        for card in player.hand.all():
+            cards.append(card)
     if not game.ck_winner():
         return render(
             request,
             'table.html',
             context={'players': players, 'actions': actions, 'game': game,
-                     'current_player_name': game.currentPlayerName(), 'actionhistory': actionhistory}
+                     'current_player_name': game.currentPlayerName(), 'actionhistory': actionhistory, 'cards': cards}
         )
     else:
         return render(
@@ -100,23 +106,44 @@ def shuffle(request):
 
 
 def actions(request):
-
-    # checkTurn(request)
     game = Game.objects.all()[0]
-    if not checkTurn(request):
-        return render(request, 'redo.html', {'redo': "Not your turn"})
-
+    if not game.redo:
+        game.redoMessage=None
+        game.save()
     get_initial_action_data(request)
+
+    game = Game.objects.all()[0]
+    if game.redoMessage:
+        game.redo=False
+        game.save()
+        return render(request, 'redo.html', {'redo': game.redoMessage})
+
+    if game.ck_coins():
+        game.redo=False
+        game.save()
+        return render(request, 'redo.html', {'redo': game.redoMessage})
+
+    if game.ck_same_player():
+        game.redo=False
+        game.save()
+        return render(request, 'redo.html', {'redo': game.redoMessage})
 
     if playerRequired():
         players = Player.objects.all()
         return render(request, 'player.html', {'players': players})
-    elif discardRequired():
+
+    if game.discardRequired():
         game = Game.objects.all()[0]
         player = game.getPlayerFromPlayerName(game.current_player1)
         return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
-    if game.redoMessage is None:
-            game.nextTurn()
-            game.clearCurrent()
-            game.save()
-            return redirect(showtable)
+
+    if not game.redoMessage:
+        game.nextTurn()
+        game.clearCurrent()
+        game.save()
+        return redirect(showtable)
+
+    if game.redoMessage:
+        game.redo=False
+        game.save()
+        return render(request, 'redo.html', {'redo': game.redoMessage})

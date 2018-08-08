@@ -55,6 +55,8 @@
                 {% endif %}
                 {% endfor %}
             </ul>
+
+            <a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
             <!--{% if game.redoMessage != None %}-->
             <!--<h1> {{ user.get_username }} -{{ game.redoMessage }}  </h1>-->
             <!--{% endif %}-->

@@ -16,46 +16,58 @@ class ActionHistory(models.Model):
 class Action(models.Model):
     name = models.CharField(max_length=20, default="Assassinate")
     player2_required=models.BooleanField(default=False)
+    coins_required = models.IntegerField(default=0)
     def __str__(self):
         return self.name
 
-    def action(self,player,player2=None):
-        game=Game.objects.all()[0]
-        self.player=player
-        self.player2=player2
-        game.current_action = self.name
-        game.current_player1=self.player.playerName
-        game.save()
-        self.redoMessage=None
-        if self.name == "Income":
-            player.addCoins(1)
-        elif self.name == "Foreign Aid":
-            player.addCoins(2)
-        elif self.name == "Take 3 coins":
-            player.addCoins(3)
-        elif self.name == "Steal":
-            self.steal(self.player)
-        elif self.name == 'Assassinate':
-            if player.coins<3:
-                self.redoMessage = "You don't have enough coins"
-            else:
-                player.loseCoins(3)
-        elif self.name == "Draw":
-            player.draw()
-            self.redoMessage=None
-        elif self.name == 'Coup':
-            if player.coins<7:
-                self.redoMessage = "You don't have enough coins"
-            else:
-                pass
-                # player.loseCoins(7)
-        elif self.name == 'Challenge':  # assassinate and steal??
-            pass
-        player.save()
-        # if  self.redoMessage != None:
-        actionhistory=ActionHistory(name=self.name,player1=player.playerName)
-        actionhistory.save()
-        return self.redoMessage
+    # def action(self):
+    #     game=Game.objects.all()[0]
+    #     # self.player=player
+    #     # self.player2=player2
+    #     game.current_action = self.name
+    #     game.current_player1=game.current_player1
+    #     player=Player.objects.get(playerName=game.current_player1)
+    #     # try:
+    #     # game.current_player2=self.player2.playerName
+    #     # except:
+    #     #     pass
+    #     # game.save()
+    #
+    #     # if game.ck_coins():
+    #         # return
+    #
+    #     self.redoMessage=None
+    #     if self.name == "Income":
+    #         player.addCoins(1)
+    #     elif self.name == "Foreign Aid":
+    #         player.addCoins(2)
+    #     elif self.name == "Take 3 coins":
+    #         player.addCoins(3)
+    #     elif self.name == "Steal":
+    #         self.steal(self.player)
+    #     elif self.name == 'Assassinate':
+    #         if player.coins<self.coins_required:
+    #             self.redoMessage = "You don't have enough coins"
+    #         else:
+    #             player.loseCoins(3)
+    #     elif self.name == "Draw":
+    #         player.draw()
+    #         self.redoMessage=None
+    #     elif self.name == 'Coup':
+    #         if player.coins<self.coins_required:
+    #             self.redoMessage = "You don't have enough coins"
+    #         else:
+    #             pass
+    #             player.loseCoins(7)
+    #     elif self.name == 'Challenge':  # assassinate and steal??
+    #         pass
+    #     player.save()
+    #     # if  self.redoMessage != None:
+    #     actionhistory=ActionHistory(name=self.name,player1=player.playerName)
+    #     actionhistory.save()
+    #     game.redoMessage= self.redoMessage
+    #     game.save()
+    #     return
 
 
 
@@ -130,6 +142,10 @@ class Player(models.Model):
 
     def cardcount(self):
         return len(self.hand.all())
+
+    def lose_influence(self,card):
+        card.status='Up'
+        card.save()
 
 class Deck(models.Model):
     cards = models.ManyToManyField(CardInstance)
@@ -256,6 +272,18 @@ class Game(models.Model):
             # self.message("Game over - {} wins".format(winner))
             return self.winner
 
+    def ck_coins(self):
+        game=Game.objects.all()[0]
+        player=Player.objects.get(playerName=game.current_player1)
+        action = Action.objects.get(name=game.current_action)
+        if player.coins < action.coins_required:
+            self.redoMessage = "You don't have enough coins"
+            self.save()
+            return True
+        else:
+            self.redoMessage=None
+            self.save()
+            return False
 
     def clearCurrent(self):
         self.current_action=None
@@ -264,6 +292,35 @@ class Game(models.Model):
         self.redo=False
         self.redoMessage=None
         self.discardRequired=False
+        self.save()
 
     def getPlayerFromPlayerName(self,playerName):
         return Player.objects.get(playerName=playerName)
+
+    def discard_cards(self,cards):
+        player=Player.objects.get(playerName=self.current_player1)
+        for card in cards:
+            player.discard(card)
+            player.save()
+        self.redo = False
+        self.redoMessage = None
+        self.discardRequired=False
+        self.save()
+
+    def ck_same_player(self):
+        # game=Game.objects.all()[0]
+        if self.currentPlayerName() == self.current_player2:
+            self.redoMessage="You can't do that to yourself"
+            self.current_player2=None
+            self.save()
+            return True
+        else:
+            self.redoMessage = None
+            self.save()
+            return False
+
+    def discardRequired(self):
+        # game = Game.objects.all()[0]
+        player = self.getPlayerFromPlayerName(self.current_player1)
+        if player.cardcount() > 2:
+            return self.discardRequired

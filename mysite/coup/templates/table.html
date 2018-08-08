@@ -4,27 +4,86 @@
 <head>
     <meta charset="UTF-8">
     <title>Coup</title>
+
+
 </head>
 <body>
 
 {% load static %}
 <table class="table">
-    <td>
-{% for player in players %}
+    <col width="10%">
+    <col width = "30%">
+    <col width = "10%">
+
+
 <tr>
-    <td><strong> {{player.playerName}} has {{player.coins}} coins  </strong></td>
+    <td><strong> {{players.0}}</strong>
+    <strong> - {{players.0.coins}} coins  </strong>
+    <td></td>
+
+    </td>
+    <td><strong> {{players.1}}</strong>
+    <strong> - {{players.1.coins}} coins  </strong>
+        <td></td>
 </tr>
-{% for  card in player.hand.all %}
-{% if card.status == 'U' or user.get_username == player.playerName%}
-<td><img src="/static/images/{{card}}.jpg" height="350"></td>
+<tr>
+
+    {% if card.status == 'U' or user.get_username == players.0.playerName %}
+<td><img src="/static/images/{{cards.0}}.jpg" height="350"></td>
 {% else %}
 <td><img src="/static/images/down.png" height="350"></td>
 {% endif %}
 
-{% endfor %}
+{% if card.status == 'U' or user.get_username == players.0.playerName %}
+<td><img src="/static/images/{{cards.1}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+
+    {% if card.status == 'U' or user.get_username == players.1.playerName %}
+<td><img src="/static/images/{{cards.2}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+
+{% if card.status == 'U' or user.get_username == players.1.playerName %}
+<td><img src="/static/images/{{cards.3}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+</tr>
 
 
-{% endfor %}
+    <tr>
+    <td><strong> {{players.2}}</strong> <strong> - {{players.2.coins}} coins  </strong></td><td> </td>
+    <td><strong> {{players.3}}</strong> <strong> - {{players.3.coins}} coins  </strong></td><td> </td>
+<tr>
+    {% if card.status == 'U' or user.get_username == players.2.playerName %}
+<td><img src="/static/images/{{cards.4}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+
+{% if card.status == 'U' or user.get_username == players.2.playerName %}
+<td><img src="/static/images/{{cards.5}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+
+    {% if card.status == 'U' or user.get_username == players.3.playerName %}
+<td><img src="/static/images/{{cards.6}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+
+{% if card.status == 'U' or user.get_username == players.3.playerName %}
+<td><img src="/static/images/{{cards.7}}.jpg" height="350"></td>
+{% else %}
+<td><img src="/static/images/down.png" height="350"></td>
+{% endif %}
+</tr>
+
+
     </tbody>
   </table>
 
