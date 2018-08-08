@@ -55,9 +55,9 @@ def take_action(request):
     elif game.current_action == 'Challenge':  # assassinate and steal??
         pass
     player1.save()
-    if not game.redo:
-        actionhistory = ActionHistory(name=action.name, player1=player1.playerName)
-        actionhistory.save()
+    # if not game.redo:
+    actionhistory = ActionHistory(name=action.name, player1=player1.playerName)
+    actionhistory.save()
     game.save()
     return
 

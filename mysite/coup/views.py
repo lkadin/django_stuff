@@ -106,6 +106,7 @@ def shuffle(request):
 
 
 def actions(request):
+
     game = Game.objects.all()[0]
     if not game.redo:
         game.redoMessage=None
@@ -130,6 +131,7 @@ def actions(request):
 
     if playerRequired():
         players = Player.objects.all()
+        game.pending_action = True
         return render(request, 'player.html', {'players': players})
 
     if game.discardRequired():

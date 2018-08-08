@@ -206,7 +206,8 @@ class Game(models.Model):
     current_player2 = models.CharField(max_length=20,null=True,blank=True)
     redo = models.BooleanField(default=True)
     redoMessage = models.CharField(max_length=30,blank=True,null=True)
-    discardRequired = models.BooleanField(default=False)
+    # discardRequired = models.BooleanField(default=False)
+    pending_action = models.BooleanField(default=False)
 
     def del_card_instances(self):
         CardInstance.objects.all().delete()
