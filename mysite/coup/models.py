@@ -20,54 +20,6 @@ class Action(models.Model):
     def __str__(self):
         return self.name
 
-    # def action(self):
-    #     game=Game.objects.all()[0]
-    #     # self.player=player
-    #     # self.player2=player2
-    #     game.current_action = self.name
-    #     game.current_player1=game.current_player1
-    #     player=Player.objects.get(playerName=game.current_player1)
-    #     # try:
-    #     # game.current_player2=self.player2.playerName
-    #     # except:
-    #     #     pass
-    #     # game.save()
-    #
-    #     # if game.ck_coins():
-    #         # return
-    #
-    #     self.redoMessage=None
-    #     if self.name == "Income":
-    #         player.addCoins(1)
-    #     elif self.name == "Foreign Aid":
-    #         player.addCoins(2)
-    #     elif self.name == "Take 3 coins":
-    #         player.addCoins(3)
-    #     elif self.name == "Steal":
-    #         self.steal(self.player)
-    #     elif self.name == 'Assassinate':
-    #         if player.coins<self.coins_required:
-    #             self.redoMessage = "You don't have enough coins"
-    #         else:
-    #             player.loseCoins(3)
-    #     elif self.name == "Draw":
-    #         player.draw()
-    #         self.redoMessage=None
-    #     elif self.name == 'Coup':
-    #         if player.coins<self.coins_required:
-    #             self.redoMessage = "You don't have enough coins"
-    #         else:
-    #             pass
-    #             player.loseCoins(7)
-    #     elif self.name == 'Challenge':  # assassinate and steal??
-    #         pass
-    #     player.save()
-    #     # if  self.redoMessage != None:
-    #     actionhistory=ActionHistory(name=self.name,player1=player.playerName)
-    #     actionhistory.save()
-    #     game.redoMessage= self.redoMessage
-    #     game.save()
-    #     return
 
 
 
@@ -124,9 +76,7 @@ class Player(models.Model):
             self.deck = Deck.objects.all()[0]
             self.hand.add(self.deck.drawCard())
             self.hand.add(self.deck.drawCard())
-            game=Game.objects.all()[0]
-            game.discardRequired=True
-            game.save()
+            self.save()
 
     def discard(self,cardname):
         self.cardname=cardname
@@ -136,16 +86,18 @@ class Player(models.Model):
         self.deck.returnCard(self.card)
         self.hand.remove(self.card)
         self.deck.save()
-        game = Game.objects.all()[0]
-        game.discardRequired = True
-        game.save()
+        self.save()
 
     def cardcount(self):
         return len(self.hand.all())
 
-    def lose_influence(self,card):
-        card.status='Up'
-        card.save()
+    def lose_influence(self, cardname):
+        self.cardname = cardname
+        self.card_id = Card.objects.filter(cardName=cardname)[0].id
+        self.card = self.hand.filter(card_id=self.card_id)[0]
+        self.card.status = 'U'
+        self.card.save()
+        self.save()
 
 class Deck(models.Model):
     cards = models.ManyToManyField(CardInstance)
@@ -186,7 +138,6 @@ class Deck(models.Model):
         self.max=self.maxcard['shuffle_order__max']
         self.card=CardInstance.objects.get(shuffle_order=self.max)
         self.card.shuffle_order=None
-        # self.cards.remove(self.card)
         self.card.save()
         return self.card
 
@@ -204,9 +155,7 @@ class Game(models.Model):
     current_action = models.CharField(max_length=20,null=True,blank=True)
     current_player1 = models.CharField(max_length=20,null=True,blank=True)
     current_player2 = models.CharField(max_length=20,null=True,blank=True)
-    redo = models.BooleanField(default=True)
     redoMessage = models.CharField(max_length=30,blank=True,null=True)
-    # discardRequired = models.BooleanField(default=False)
     pending_action = models.BooleanField(default=False)
 
     def del_card_instances(self):
@@ -270,30 +219,14 @@ class Game(models.Model):
                 count += 1
                 self.winner = self.player.playerName
         if count == 1:
-            # self.message("Game over - {} wins".format(winner))
             return self.winner
-
-    def ck_coins(self):
-        game=Game.objects.all()[0]
-        player=Player.objects.get(playerName=game.current_player1)
-        action = Action.objects.get(name=game.current_action)
-        if player.coins < action.coins_required:
-            self.redoMessage = "You don't have enough coins"
-            self.save()
-            return True
-        else:
-            self.redoMessage=None
-            self.save()
-            return False
 
     def clearCurrent(self):
         self.current_action=None
         self.current_player1=None
         self.current_player2=None
-        self.redo=False
-        self.redoMessage=None
-        self.discardRequired=False
-        self.save()
+        self.pending_action = False
+        # self.save()
 
     def getPlayerFromPlayerName(self,playerName):
         return Player.objects.get(playerName=playerName)
@@ -303,25 +236,18 @@ class Game(models.Model):
         for card in cards:
             player.discard(card)
             player.save()
-        self.redo = False
-        self.redoMessage = None
-        self.discardRequired=False
-        self.save()
-
-    def ck_same_player(self):
-        # game=Game.objects.all()[0]
-        if self.currentPlayerName() == self.current_player2:
-            self.redoMessage="You can't do that to yourself"
-            self.current_player2=None
-            self.save()
-            return True
-        else:
-            self.redoMessage = None
-            self.save()
-            return False
+        # self.save()
 
     def discardRequired(self):
-        # game = Game.objects.all()[0]
         player = self.getPlayerFromPlayerName(self.current_player1)
         if player.cardcount() > 2:
-            return self.discardRequired
+            return True
+        else:
+            return False
+
+    def playerRequired(self):
+        if self.current_player2:
+            return
+        actionName = self.current_action
+        action = Action.objects.get(name=actionName)
+        return action.player2_required

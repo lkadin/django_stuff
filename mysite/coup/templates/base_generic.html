@@ -34,11 +34,23 @@
                 <br>
                 <font size="3"><b>Make Your Move</b></font>
                 <br>
+
+
+                {% if user.get_username == current_player_name %}
+
                 {% for action in actions %}
+                {% if current_player_coins >= action.coins_required %}
+
                 <br>
                 <li><a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
                 </li>
+
+                {% endif %}
                 {% endfor %}
+
+
+                {% endif %}
+
 
                 <br>
                 <br>
