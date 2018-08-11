@@ -251,3 +251,9 @@ class Game(models.Model):
         actionName = self.current_action
         action = Action.objects.get(name=actionName)
         return action.player2_required
+
+    def lose_influence_required(self):
+        if self.current_action in ("Assassinate", "Coup") and self.current_player2:
+            return True
+        else:
+            return False

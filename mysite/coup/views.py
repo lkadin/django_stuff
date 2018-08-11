@@ -117,6 +117,15 @@ def actions(request):
         return redirect(showtable)
     else:
         get_initial_action_data(request)
+
         if game.discardRequired():
             player = game.getPlayerFromPlayerName(game.current_player1)
             return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
+
+        if game.playerRequired():
+            players = Player.objects.all()
+            return render(request, 'player.html', {'players': players})
+
+        if game.lose_influence_required:
+            player = game.getPlayerFromPlayerName(game.current_player2)
+            return render(request, 'lose_influence.html', {'player': player, 'cards': player.hand.all()})

@@ -6,10 +6,10 @@ def take_action(request):
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
 
-    if game.current_action == "Draw":
+    if game.current_action in ("Draw", "Assassinate", "Coup"):
         game.pending_action = True
-
         game.save()
+
     game = Game.objects.all()[0]
 
     if game.current_action == "Income":
@@ -20,20 +20,31 @@ def take_action(request):
         player1.addCoins(3)
     elif game.current_action == "Steal":
         pass
-    # elif game.current_action == 'Assassinate':
-    #     if game.pending_action:
-    #         player1.loseCoins(3)
-    #         player1.save()
-    #         cardName = request.POST.getlist('cardnames', None)
-    #         player2 = Player.objects.get(playerName=game.current_player2)
-    #         player2.lose_influence(cardName)
-    #         # game.clearCurrent()
-    #         game.pending_action=False
-    #         game.save()
-    #         return
-    #     else:
-    #         return
-    #
+    elif game.current_action == 'Assassinate':
+        if request.method == 'GET':
+            return
+        playerName2 = game.current_player2
+        if not playerName2:
+            playerName2 = request.POST.get('name', None)
+            game.current_player2 = playerName2
+            game.save()
+            return
+        cardName = request.POST.getlist('cardnames', None)
+        if cardName:
+            player1.loseCoins(3)
+            player1.save()
+            cardName = request.POST.get('cardnames', None)
+            player2 = game.getPlayerFromPlayerName(playerName2)
+            print("Player {} is losing card {}".format(player2, cardName))
+            player2.lose_influence(cardName)
+            player2.save()
+            game.clearCurrent()
+            game.pending_action = False
+            game.save()
+            return
+        else:
+            return
+
     elif game.current_action == "Draw":
 
         if not game.discardRequired():
@@ -69,7 +80,6 @@ def take_action(request):
 def get_initial_action_data(request):
     if request.method == 'GET':
         getrequest(request)
-
     take_action(request)
     return
 

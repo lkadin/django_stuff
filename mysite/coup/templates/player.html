@@ -8,7 +8,9 @@
 <form action="actions" method="post">{% csrf_token %}
             <select id="playerselect" name="name">
                 {% for player in players %}
+                {% if user.get_username != player.playerName %}
                 <option value="{{ player.playerName }}">{{ player.playerName }}</option>
+                {% endif %}
                 {% endfor %}
              </select>
     <input type="submit" value="Submit">
