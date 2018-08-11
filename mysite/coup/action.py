@@ -2,6 +2,7 @@ from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistor
 
 
 def take_action(request):
+
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
@@ -21,29 +22,18 @@ def take_action(request):
     elif game.current_action == "Steal":
         pass
     elif game.current_action == 'Assassinate':
+
         if request.method == 'GET':
             return
         playerName2 = game.current_player2
         if not playerName2:
             playerName2 = request.POST.get('name', None)
+            game.player2_turn = True
             game.current_player2 = playerName2
             game.save()
             return
-        cardName = request.POST.getlist('cardnames', None)
-        if cardName:
-            player1.loseCoins(3)
-            player1.save()
-            cardName = request.POST.get('cardnames', None)
-            player2 = game.getPlayerFromPlayerName(playerName2)
-            print("Player {} is losing card {}".format(player2, cardName))
-            player2.lose_influence(cardName)
-            player2.save()
-            game.clearCurrent()
-            game.pending_action = False
-            game.save()
-            return
-        else:
-            return
+
+
 
     elif game.current_action == "Draw":
 
@@ -89,5 +79,21 @@ def getrequest(request):
     game = Game.objects.all()[0]
     game.current_player1 = playerName1
     game.current_action = actionName
+    game.save()
+    return
+
+
+def finish_lose_influence(request):
+    game = Game.objects.all()[0]
+    player1 = game.getPlayerFromPlayerName(game.current_player1)
+    player1.loseCoins(3)
+    player1.save()
+    cardName = request.POST.get('cardnames', None)
+    player2 = game.getPlayerFromPlayerName(game.current_player2)
+    print("Player {} is losing card {}".format(player2, cardName))
+    player2.lose_influence(cardName)
+    player2.save()
+    game.clearCurrent()
+    game.pending_action = False
     game.save()
     return
