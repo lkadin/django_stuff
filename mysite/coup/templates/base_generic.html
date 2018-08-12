@@ -34,19 +34,21 @@
                 <li><a href="{% url 'login'%}?next={{request.path}}"><b>Login</b></a></li>
                 {% endif %}
 
-                <br>
-                <font size="3"><b>Make Your Move</b></font>
-                <br>
 
                 {% if user.get_username == current_player_name and not game.current_player2 %}
 
-                {% for action in actions %}
-                {% if current_player_coins >= action.coins_required %}
+                {% if current_player_coins >= 10 %}
 
-                <br>
+                <li><a href="{% url 'actions'%}?action=Coup&playerName={{current_player_name}}"><b>Coup</b></a>
+                    {% endif%}
+
+                    {% for action in actions %}
+
+
+                    {% if current_player_coins >= action.coins_required and current_player_coins < 10 %}
+                    <br>
                 <li><a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
                 </li>
-
                 {% endif %}
                 {% endfor %}
 
