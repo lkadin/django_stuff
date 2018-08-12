@@ -2,7 +2,6 @@ from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistor
 
 
 def take_action(request):
-
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
@@ -21,10 +20,11 @@ def take_action(request):
         player1.addCoins(3)
     elif game.current_action == "Steal":
         pass
-    elif game.current_action == 'Assassinate':
+    elif game.current_action in ('Assassinate', 'Coup'):
 
         if request.method == 'GET':
             return
+
         playerName2 = game.current_player2
         if not playerName2:
             playerName2 = request.POST.get('name', None)
@@ -67,11 +67,13 @@ def take_action(request):
     game.save()
     return
 
+
 def get_initial_action_data(request):
     if request.method == 'GET':
         getrequest(request)
     take_action(request)
     return
+
 
 def getrequest(request):
     playerName1 = request.GET.get('playerName', None)
@@ -85,15 +87,15 @@ def getrequest(request):
 
 def finish_lose_influence(request):
     game = Game.objects.all()[0]
+    action = Action.objects.get(name=game.current_action)
     player1 = game.getPlayerFromPlayerName(game.current_player1)
-    player1.loseCoins(3)
+    player1.loseCoins(action.coins_required)
     player1.save()
     cardName = request.POST.get('cardnames', None)
     player2 = game.getPlayerFromPlayerName(game.current_player2)
-    print("Player {} is losing card {}".format(player2, cardName))
     player2.lose_influence(cardName)
     player2.save()
     game.clearCurrent()
-    game.pending_action = False
+    game.nextTurn()
     game.save()
     return

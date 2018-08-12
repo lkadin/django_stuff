@@ -25,18 +25,20 @@
             <ul class="sidebar-nav">
                 <br>
                 {% if user.is_authenticated %}
-                <b><li>User: {{ user.get_username }}</li></b>
+                <b>
+                    <li>User: {{ user.get_username }}</li>
+                </b>
                 <br>
                 <li><a href="{% url 'logout'%}?next={{request.path}}"><b>Logout</b></a></li>
                 {% else %}
                 <li><a href="{% url 'login'%}?next={{request.path}}"><b>Login</b></a></li>
                 {% endif %}
+
                 <br>
                 <font size="3"><b>Make Your Move</b></font>
                 <br>
 
-
-                {% if user.get_username == current_player_name %}
+                {% if user.get_username == current_player_name and not game.current_player2 %}
 
                 {% for action in actions %}
                 {% if current_player_coins >= action.coins_required %}
@@ -48,12 +50,11 @@
                 {% endif %}
                 {% endfor %}
 
-
                 {% endif %}
+                <li>
 
-
-                <br>
-                <br>
+                    <br>
+                    <br>
                 <li><b>Last 4 moves:</b></li>
                 <br>
                 {% for event in actionhistory %}
@@ -66,14 +67,25 @@
                 <font size="3"><b>{{ player.playerName }} - it's your turn</b></font>
                 {% endif %}
                 {% endfor %}
+
+                {% if game.current_player2 %}
+                <br>
+                <p>{{current_player_name}} is {{ game.current_action }} {{game.current_player2 }}</p>
+                {% endif %}
+
+                {% if user.get_username == game.current_player2 %}
+
+                <a href="{% url 'loseinfluence'%}?action=Lose Influence&playerName={{game.current_player2}}"><b>Lose
+                    Influence</b></a>
+                {% endif %}
             </ul>
 
-            <a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
+            <!--<a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>-->
             <!--{% if game.redoMessage != None %}-->
             <!--<h1> {{ user.get_username }} -{{ game.redoMessage }}  </h1>-->
             <!--{% endif %}-->
 
-</form>
+            </form>
 
             {% endblock %}
 

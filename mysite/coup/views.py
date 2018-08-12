@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory
 # from django.contrib.auth.mixins import LoginRequiredMixin
-from .action import get_initial_action_data
+from .action import get_initial_action_data, finish_lose_influence
 import random
 
 
@@ -105,8 +105,16 @@ def shuffle(request):
     )
 
 
-def actions(request):
+def loseinfluence(request):
+    if request.method == 'POST':
+        finish_lose_influence(request)
+        return redirect(showtable)
+    else:
+        game = Game.objects.all()[0]
+        player = game.getPlayerFromPlayerName(game.current_player2)
+        return render(request, 'lose_influence.html', {'player': player, 'cards': player.hand.filter(status='D')})
 
+def actions(request):
     get_initial_action_data(request)
 
     game = Game.objects.all()[0]
@@ -123,9 +131,12 @@ def actions(request):
             return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
 
         if game.playerRequired():
+            living = []
             players = Player.objects.all()
-            return render(request, 'player.html', {'players': players})
+            for player in players:
+                if player.influence() > 0:
+                    living.append(player)
 
-        if game.lose_influence_required:
-            player = game.getPlayerFromPlayerName(game.current_player2)
-            return render(request, 'lose_influence.html', {'player': player, 'cards': player.hand.all()})
+            return render(request, 'player.html', {'players': living})
+
+        return redirect(showtable)

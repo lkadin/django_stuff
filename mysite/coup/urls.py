@@ -28,3 +28,7 @@ urlpatterns += [
 urlpatterns += [
     path('actions', views.actions, name='actions'),
     ]
+
+urlpatterns += [
+    path('loseinfluence', views.loseinfluence, name='loseinfluence'),
+]

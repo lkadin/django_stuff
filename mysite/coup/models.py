@@ -157,6 +157,7 @@ class Game(models.Model):
     current_player2 = models.CharField(max_length=20,null=True,blank=True)
     redoMessage = models.CharField(max_length=30,blank=True,null=True)
     pending_action = models.BooleanField(default=False)
+    player2_turn = models.BooleanField(default=False)
 
     def del_card_instances(self):
         CardInstance.objects.all().delete()
@@ -206,6 +207,9 @@ class Game(models.Model):
 
     def nextTurn(self):
         self.whoseTurn=(self.whoseTurn+1) % 4
+        while not Player.objects.get(playerNumber=self.whoseTurn).influence():
+            self.whoseTurn = (self.whoseTurn + 1) % 4
+
 
     def currentPlayerName(self):
         self.players=[self.player for self.player in Player.objects.all()]
@@ -226,6 +230,7 @@ class Game(models.Model):
         self.current_player1=None
         self.current_player2=None
         self.pending_action = False
+        self.player2_turn = False
         # self.save()
 
     def getPlayerFromPlayerName(self,playerName):
@@ -254,6 +259,8 @@ class Game(models.Model):
 
     def lose_influence_required(self):
         if self.current_action in ("Assassinate", "Coup") and self.current_player2:
+            self.player2_turn = True
+            self.save()
             return True
         else:
             return False
