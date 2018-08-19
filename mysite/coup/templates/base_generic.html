@@ -23,6 +23,7 @@
         <div class="col-sm-2">
             {% block sidebar %}
             <ul class="sidebar-nav">
+
                 <br>
                 {% if user.is_authenticated %}
                 <b>
@@ -34,25 +35,12 @@
                 <li><a href="{% url 'login'%}?next={{request.path}}"><b>Login</b></a></li>
                 {% endif %}
 
-
-                {% if user.get_username == current_player_name and not game.current_player2 %}
-
-                {% if current_player_coins >= 10 %}
-
-                <li><a href="{% url 'actions'%}?action=Coup&playerName={{current_player_name}}"><b>Coup</b></a>
-                    {% endif%}
-
-                    {% for action in actions %}
-
-
-                    {% if current_player_coins >= action.coins_required and current_player_coins < 10 %}
-                    <br>
-                <li><a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
-                </li>
-                {% endif %}
+                {% for action in actions %}
+                <br>
+                <li>
+                    <a href="/coup/{{action.url}}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>
                 {% endfor %}
 
-                {% endif %}
                 <li>
 
                     <br>
@@ -75,17 +63,8 @@
                 <p>{{current_player_name}} is {{ game.current_action }} {{game.current_player2 }}</p>
                 {% endif %}
 
-                {% if user.get_username == game.current_player2 %}
-
-                <a href="{% url 'loseinfluence'%}?action=Lose Influence&playerName={{game.current_player2}}"><b>Lose
-                    Influence</b></a>
-                {% endif %}
             </ul>
 
-            <!--<a href="{% url 'actions'%}?action={{action}}&playerName={{current_player_name}}"><b>{{action}}</b></a>-->
-            <!--{% if game.redoMessage != None %}-->
-            <!--<h1> {{ user.get_username }} -{{ game.redoMessage }}  </h1>-->
-            <!--{% endif %}-->
 
             </form>
 

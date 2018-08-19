@@ -1,17 +1,13 @@
 # from django.http import HttpResponse
 from django.shortcuts import render, redirect
-from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory
+from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory, Function
 # from django.contrib.auth.mixins import LoginRequiredMixin
 from .action import get_initial_action_data, finish_lose_influence
 import random
 
-
 def index(request):
     players = Player.objects.all()
-    # try:
     names = [player.playerName for player in players]
-    # except:
-    #     names = []
     if len(players) <= 4:
         if request.user.username not in names and request.user.username:
             player = Player(playerName=request.user.username)
@@ -25,7 +21,6 @@ def index(request):
             request,
             'no_more.html')
 
-
 def startgame(request):
     game = Game(id=1)
     game.initialize()
@@ -36,26 +31,55 @@ def startgame(request):
     deck = Deck(id=1)
     deck.save()
     deck.build()
-    # players = Player.objects.all()
-    # game = Game.objects.all()
-    # actions = Action.objects.all()
     return redirect(showtable)
-    # request,
-    # 'table.html',
-    # context={'players': players,'actions':actions,'game':game}
-    # )
-
 
 def showtable(request):
+    def get_action():
+        prior_action_name, prior_player_name = game.get_prior_action_info()
+
+        if request.user.get_username() == game.currentPlayerName():
+            if current_player_coins >= 10:
+                actions = Action.objects.filter(name="Coup")
+            else:
+                actions = Action.objects.filter(coins_required__lte=current_player_coins)
+
+        if request.user.get_username() != game.currentPlayerName():
+            if prior_action_name not in (
+            'Income', 'Draw', 'Challenge', None) and request.user.get_username() != prior_player_name:
+                actions = Action.objects.filter(name__in=['Challenge'])
+            else:
+                actions = []
+
+        if game.current_player2:
+            actions = []
+
+        if request.user.get_username() == game.current_player2 and game.current_action == 'Assassinate':
+            actions = Action.objects.filter(name__in=["Lose Influence", "Block"])
+
+        if request.user.get_username() == game.current_player2 and game.current_action in ('Coup', 'Challenge'):
+            actions = Action.objects.filter(name__in=["Lose Influence"])
+
+        if request.user.get_username() == game.current_player2 and game.current_action == 'Steal':
+            actions = Action.objects.filter(name__in=["Block", "Allow Steal"])
+        if not game.current_action:
+            try:
+                actions = actions.exclude(name__in=['Block'])
+            except:
+                pass
+
+        return actions
+
     players = Player.objects.all()
-    actions = Action.objects.all()
     actionhistory = ActionHistory.objects.all().order_by('-id')[:4]
     game = Game.objects.all()[0]
     cards = []
     current_player_coins = players.get(playerNumber=game.whoseTurn).coins
+    actions = get_action()
+
     for player in players:
         for card in player.hand.all():
             cards.append(card)
+
     if not game.ck_winner():
         return render(
             request,
@@ -65,12 +89,12 @@ def showtable(request):
                      'current_player_coins': current_player_coins}
         )
     else:
+
         return render(
             request,
             'game_over.html',
             context={'players': players, 'actions': actions, 'game': game, 'winner': game.ck_winner()}
         )
-
 
 def showdeck(request):
     deck = Deck.objects.all()[0]
@@ -80,7 +104,6 @@ def showdeck(request):
         'show_deck.html',
         context={'deck': deck, 'cardsremaining': cardsremaining}
     )
-
 
 def initialdeal(request):
     game = Game.objects.get(id=80)
@@ -92,7 +115,6 @@ def initialdeal(request):
         context={'players': players}
     )
 
-
 def shuffle(request):
     deck = Deck.objects.get(id=210)
     # deck=decks[0]
@@ -103,7 +125,6 @@ def shuffle(request):
         'show_deck.html',
         context={'deck': deck}
     )
-
 
 def loseinfluence(request):
     if request.method == 'POST':
@@ -135,8 +156,10 @@ def actions(request):
             players = Player.objects.all()
             for player in players:
                 if player.influence() > 0:
-                    living.append(player)
-
+                    if game.current_action != 'Steal':
+                        living.append(player)
+                    elif game.current_action == 'Steal' and player.coins >= 2:
+                        living.append(player)
             return render(request, 'player.html', {'players': living})
 
         return redirect(showtable)
