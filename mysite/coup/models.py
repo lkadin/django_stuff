@@ -22,6 +22,7 @@ class Action(models.Model):
     coins_required = models.IntegerField(default=0)
     url = models.CharField(max_length=20, default='actions')
     pending_required = models.BooleanField(default=False)
+    description = models.CharField(max_length=20, default=name)
 
     def __str__(self):
         return self.name
@@ -71,11 +72,13 @@ class Player(models.Model):
         return cnt
 
     def draw(self):
-        if len(self.hand.all()) < 4:
-            self.deck = Deck.objects.all()[0]
+        self.deck = Deck.objects.all()[0]
+        if len(self.hand.filter(status='D')) == 2:
             self.hand.add(self.deck.drawCard())
             self.hand.add(self.deck.drawCard())
-            self.save()
+        elif len(self.hand.filter(status='D')) == 1:
+            self.hand.add(self.deck.drawCard())
+        self.save()
 
     def discard(self, cardname):
         self.cardname = cardname
@@ -165,6 +168,7 @@ class Game(models.Model):
     redoMessage = models.CharField(max_length=30, blank=True, null=True)
     pending_action = models.BooleanField(default=False)
     player2_turn = models.BooleanField(default=False)
+    challenge_in_progress = models.BooleanField(default=False)
 
     def del_card_instances(self):
         CardInstance.objects.all().delete()
@@ -242,6 +246,7 @@ class Game(models.Model):
         self.current_player2 = None
         self.pending_action = False
         self.player2_turn = False
+        self.challenge_in_progress = False
         # self.save()
 
     def getPlayerFromPlayerName(self, playerName):
@@ -276,19 +281,29 @@ class Game(models.Model):
             return False
 
     def challenge(self):
+        self.challenge_in_progress = True
         prior_action_name, prior_player_name = self.get_prior_action_info()
         prior_player = Player.objects.get(playerName=prior_player_name)
         current_player = Player.objects.get(playerName=self.current_player1)
+
         if prior_action_name == "Take 3 coins":
             if prior_player.is_card_in_hand('Duke'):  # challenge not successful
                 self.current_player2 = current_player.playerName
-
-            else:  # challenge is succesful
+            else:  # challenge is successful
                 prior_player.loseCoins(3)
                 prior_player.save()
                 self.current_player2 = prior_player_name
+                self.current_player1 = prior_player_name
             self.current_action = 'Assassinate'
             self.save()
+        # if prior_action_name == "Foreign Aid":
+        #     if prior_player.is_card_in_hand('Duke'):  # challenge not successful
+        #         self.current_player2 = current_player.playerName
+        #     else:  # challenge is successful
+        #         self.current_player2 = prior_player_name
+        #         #todo:need to reverse the foreign aid
+        #     self.current_action = 'Assassinate'
+        #     self.save()
 
     def get_prior_action_info(self):
         try:

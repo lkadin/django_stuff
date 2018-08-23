@@ -23,8 +23,11 @@ def take_action(request):
         game.save()
         return
     elif game.current_action == 'Challenge':
-        game.challenge()
-        game.save()
+        if not game.challenge_in_progress:
+            game.challenge()
+        else:
+            return
+
 
     elif game.current_action == 'Allow Steal':
         player2 = Player.objects.get(playerName=game.current_player2)
@@ -36,7 +39,8 @@ def take_action(request):
         game.save()
         return
 
-    elif game.current_action in ('Assassinate', 'Coup', 'Steal'):
+    # elif game.current_action in ('Assassinate', 'Coup', 'Steal'):
+    elif action.player2_required:
 
         if request.method == 'GET':
             return

@@ -10,89 +10,128 @@
 <body>
 
 {% load static %}
-<table class="table">
+<table style='border-collapse: collapse;'>
     <col width="10%">
-    <col width = "30%">
-    <col width = "10%">
-
-
-<tr>
-    <td><strong> {{players.0}}</strong>
-    <strong> - {{players.0.coins}} coins  </strong>
-    <td></td>
-
-    </td>
-    <td><strong> {{players.1}}</strong>
-    <strong> - {{players.1.coins}} coins  </strong>
-        <td></td>
-</tr>
-<tr>
-
-    {% if cards.0.status == 'U' or user.get_username == players.0.playerName %}
-<td><img src="/static/images/{{cards.0}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
-
-    {% if cards.1.status == 'U' or user.get_username == players.0.playerName %}
-<td><img src="/static/images/{{cards.1}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
-
-    {% if cards.2.status == 'U' or user.get_username == players.1.playerName %}
-<td><img src="/static/images/{{cards.2}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
-
-    {% if cards.3.status == 'U' or user.get_username == players.1.playerName %}
-<td><img src="/static/images/{{cards.3}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
-</tr>
+    <col width="30%">
+    <col width="10%">
 
 
     <tr>
-    <td><strong> {{players.2}}</strong> <strong> - {{players.2.coins}} coins  </strong></td><td> </td>
-    <td><strong> {{players.3}}</strong> <strong> - {{players.3.coins}} coins  </strong></td><td> </td>
-<tr>
-    {% if cards.4.status == 'U' or user.get_username == players.2.playerName %}
-<td><img src="/static/images/{{cards.4}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
+        <td><strong> {{players.0}}</strong>
+            <strong> - {{players.0.coins}} coins </strong>
+        <td></td>
 
-    {% if cards.5.status == 'U' or user.get_username == players.2.playerName %}
-<td><img src="/static/images/{{cards.5}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
+        </td>
+        <td><strong> {{players.1}}</strong>
+            <strong> - {{players.1.coins}} coins </strong>
+        <td></td>
+    </tr>
+    <tr>
 
-    {% if cards.6.status == 'U' or user.get_username == players.3.playerName %}
-<td><img src="/static/images/{{cards.6}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
+        {% if cards.0.status == 'U' and user.get_username == players.0.playerName %}
+        <td><img src="/static/images/{{cards.0}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.0.status == 'D' and user.get_username == players.0.playerName %}
+        <td><img src="/static/images/{{cards.0}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.0.status == 'U' and user.get_username != players.0.playerName %}
+        <td><img src="/static/images/{{cards.0}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.0.status == 'D' and user.get_username != players.10playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
 
-    {% if cards.7.status == 'U' or user.get_username == players.3.playerName %}
-<td><img src="/static/images/{{cards.7}}.jpg" height="350"></td>
-{% else %}
-<td><img src="/static/images/down.png" height="350"></td>
-{% endif %}
-</tr>
+        {% if cards.1.status == 'U' and user.get_username == players.0.playerName %}
+        <td><img src="/static/images/{{cards.1}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.1.status == 'D' and user.get_username == players.0.playerName %}
+        <td><img src="/static/images/{{cards.1}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.1.status == 'U' and user.get_username != players.0.playerName %}
+        <td><img src="/static/images/{{cards.1}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.1.status == 'D' and user.get_username != players.10playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+
+        {% if cards.2.status == 'U' and user.get_username == players.1.playerName %}
+        <td><img src="/static/images/{{cards.2}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.2.status == 'D' and user.get_username == players.1.playerName %}
+        <td><img src="/static/images/{{cards.2}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.2.status == 'U' and user.get_username != players.1.playerName %}
+        <td><img src="/static/images/{{cards.2}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.2.status == 'D' and user.get_username != players.1.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+
+        {% if cards.3.status == 'U' and user.get_username == players.1.playerName %}
+        <td><img src="/static/images/{{cards.3}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.3.status == 'D' and user.get_username == players.1.playerName %}
+        <td><img src="/static/images/{{cards.3}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.3.status == 'U' and user.get_username != players.1.playerName %}
+        <td><img src="/static/images/{{cards.3}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.3.status == 'D' and user.get_username != players.1.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+    </tr>
+
+
+    <tr>
+        <td><strong> {{players.2}}</strong> <strong> - {{players.2.coins}} coins </strong></td>
+        <td></td>
+        <td><strong> {{players.3}}</strong> <strong> - {{players.3.coins}} coins </strong></td>
+        <td></td>
+    <tr>
+        {% if cards.4.status == 'U' and user.get_username == players.2.playerName %}
+        <td><img src="/static/images/{{cards.4}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.4.status == 'D' and user.get_username == players.2.playerName %}
+        <td><img src="/static/images/{{cards.4}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.4.status == 'U' and user.get_username != players.2.playerName %}
+        <td><img src="/static/images/{{cards.4}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.4.status == 'D' and user.get_username != players.2.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+
+        {% if cards.5.status == 'U' and user.get_username == players.2.playerName %}
+        <td><img src="/static/images/{{cards.5}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.5.status == 'D' and user.get_username == players.2.playerName %}
+        <td><img src="/static/images/{{cards.5}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.5.status == 'U' and user.get_username != players.2.playerName %}
+        <td><img src="/static/images/{{cards.5}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.5.status == 'D' and user.get_username != players.2.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+
+        {% if cards.6.status == 'U' and user.get_username == players.3.playerName %}
+        <td><img src="/static/images/{{cards.6}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.6.status == 'D' and user.get_username == players.3.playerName %}
+        <td><img src="/static/images/{{cards.6}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.6.status == 'U' and user.get_username != players.3.playerName %}
+        <td><img src="/static/images/{{cards.6}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.6.status == 'D' and user.get_username != players.3.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+
+        {% if cards.7.status == 'U' and user.get_username == players.3.playerName %}
+        <td><img src="/static/images/{{cards.7}}.jpg" height="350" style=opacity:0.4;></td>
+        {% elif cards.7.status == 'D' and user.get_username == players.3.playerName %}
+        <td><img src="/static/images/{{cards.7}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.7.status == 'U' and user.get_username != players.3.playerName %}
+        <td><img src="/static/images/{{cards.7}}.jpg" height="350" style=opacity:1.0;></td>
+        {% elif cards.7.status == 'D' and user.get_username != players.3.playerName %}
+        <td><img src="/static/images/down.png" height="350"></td>
+        {% endif %}
+    </tr>
 
 
     </tbody>
-  </table>
-
+</table>
 
 
 <script>
     window.setTimeout(function () {
     location.reload();
 }, 5000); // refresh/redirect after 5 seconds.
+
+
+
+
+
+
 
 </script>
 

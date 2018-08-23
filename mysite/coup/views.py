@@ -42,6 +42,9 @@ def showtable(request):
                 actions = Action.objects.filter(name="Coup")
             else:
                 actions = Action.objects.filter(coins_required__lte=current_player_coins)
+                if prior_action_name not in ('Income', 'Draw', 'Challenge', None):
+                    challenge = Action.objects.filter(name__in=['Challenge'])
+                    actions = actions.union(challenge)
 
         if request.user.get_username() != game.currentPlayerName():
             if prior_action_name not in (
@@ -66,6 +69,8 @@ def showtable(request):
                 actions = actions.exclude(name__in=['Block'])
             except:
                 pass
+        if not request.user.get_username():
+            actions = []
 
         return actions
 
@@ -75,6 +80,10 @@ def showtable(request):
     cards = []
     current_player_coins = players.get(playerNumber=game.whoseTurn).coins
     actions = get_action()
+    try:
+        action_description = Action.objects.get(name=game.current_action).description
+    except:
+        action_description = None
 
     for player in players:
         for card in player.hand.all():
@@ -86,7 +95,7 @@ def showtable(request):
             'table.html',
             context={'players': players, 'actions': actions, 'game': game,
                      'current_player_name': game.currentPlayerName(), 'actionhistory': actionhistory, 'cards': cards,
-                     'current_player_coins': current_player_coins}
+                     'current_player_coins': current_player_coins, 'action_description': action_description}
         )
     else:
 
@@ -149,7 +158,7 @@ def actions(request):
 
         if game.discardRequired():
             player = game.getPlayerFromPlayerName(game.current_player1)
-            return render(request, 'discard.html', {'player': player, 'cards': player.hand.all()})
+            return render(request, 'discard.html', {'player': player, 'cards': player.hand.filter(status='D')})
 
         if game.playerRequired():
             living = []
