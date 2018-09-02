@@ -105,9 +105,10 @@ class Player(models.Model):
         self.save()
 
     def is_card_in_hand(self, card_name):
+        card_names = card_name.split(',')
         for card in self.hand.all():
-            if card.card.cardName == card_name:
-                return True
+            if card.card.cardName in card_names:
+                return card.card.cardName
 
 
 class Deck(models.Model):
@@ -147,6 +148,7 @@ class Deck(models.Model):
             self.card2.save()
 
     def draw_card(self):
+        self.shuffle()
         self.maxcard = CardInstance.objects.all().aggregate(Max('shuffle_order'))
         self.max = self.maxcard['shuffle_order__max']
         self.card = CardInstance.objects.get(shuffle_order=self.max)
@@ -296,7 +298,7 @@ class Game(models.Model):
                 self.current_player2 = current_player.playerName
                 self.challenge_loser = current_player.playerName
                 self.challenge_winner = prior_player_name
-                prior_player.discard(prior_action.card_required)
+                prior_player.discard(prior_player.is_card_in_hand(prior_action.card_required))
                 deck.shuffle()
                 prior_player.draw()
             else:  # challenge is successful
