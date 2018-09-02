@@ -35,6 +35,7 @@ def startgame(request):
 
 def showtable(request):
     # todo: don't allow challenge yourself
+    # todo: refactor table.html
     def get_action():
         prior_action_name, prior_player_name = game.get_prior_action_info()
 
@@ -46,11 +47,17 @@ def showtable(request):
                 if prior_action_name not in ('Income', 'Draw', 'Challenge', None):
                     challenge = Action.objects.filter(name__in=['Challenge'])
                     actions = actions.union(challenge)
+                if prior_action_name == 'Foreign Aid':
+                    block_foriegn_aid = Action.objects.filter(name__in=['Block Foreign Aid'])
+                    actions = actions.union(block_foriegn_aid)
 
         if request.user.get_username() != game.currentPlayerName():
             if prior_action_name not in (
             'Income', 'Draw', 'Challenge', None) and request.user.get_username() != prior_player_name:
                 actions = Action.objects.filter(name__in=['Challenge'])
+                if prior_action_name == 'Foreign Aid':
+                    block_foriegn_aid = Action.objects.filter(name__in=['Block Foreign Aid'])
+                    actions = actions.union(block_foriegn_aid)
             else:
                 actions = []
 

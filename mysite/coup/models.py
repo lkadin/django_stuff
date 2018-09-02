@@ -315,7 +315,9 @@ class Game(models.Model):
         current_player = Player.objects.get(playerName=self.current_player1)
         deck = Deck.objects.all()[0]
 
-        if prior_action_name in ("Take 3 coins", "Block Steal", "Steal", "Assassinate"):
+        if prior_action_name in (
+        "Take 3 coins", "Block Steal", "Steal", "Assassinate", "Block Assassinate", "Block Foreign Aid"):
+            # todo:Block assassinate challenge loss takes you out of the game
             determine_challenge(self, prior_action)
 
     @staticmethod

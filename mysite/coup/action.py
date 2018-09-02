@@ -22,6 +22,14 @@ def take_action(request):
     elif game.current_action == "Block Steal":
         game.clearCurrent()
         game.save()
+    elif game.current_action == "Block Foreign Aid":
+        prior_action_name, prior_player_name = game.get_prior_action_info()
+        prior_player = Player.objects.get(playerName=prior_player_name)
+        prior_action = Action.objects.get(name=prior_action_name)
+        prior_player.lose_coins(prior_action.coins_to_lose_in_challenge)
+        prior_player.save()
+        game.clearCurrent()
+        game.save()
     elif game.current_action == "Block Assassinate":
         game.clearCurrent()
         game.save()
