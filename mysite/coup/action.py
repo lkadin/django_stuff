@@ -6,42 +6,44 @@ def take_action(request):
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
 
-    if action.pending_required:
+    if action.pending_required and not game.pending_action:
         game.pending_action = True
         game.save()
+        return
 
     game = Game.objects.all()[0]
 
     if game.current_action == "Income":
-        player1.addCoins(1)
+        player1.add_coins(1)
     elif game.current_action == "Foreign Aid":
-        player1.addCoins(2)
+        player1.add_coins(2)
     elif game.current_action == "Take 3 coins":
-        player1.addCoins(3)
-    elif game.current_action == "Block":
+        player1.add_coins(3)
+    elif game.current_action == "Block Steal":
         game.clearCurrent()
         game.save()
-        return
+    elif game.current_action == "Block Assassinate":
+        game.clearCurrent()
+        game.save()
     elif game.current_action == 'Challenge':
         if not game.challenge_in_progress:
             game.challenge()
+            game.save()
         else:
             return
 
-
     elif game.current_action == 'Allow Steal':
-        player2 = Player.objects.get(playerName=game.current_player2)
-        player1.addCoins(2)
-        player1.save()
-        player2.loseCoins(2)
+        prior_action_name, prior_player_name = game.get_prior_action_info()
+        player2 = Player.objects.get(playerName=prior_player_name)
+        player2.add_coins(2)
+        player2.save()
+        player1.lose_coins(2)
         player2.save()
         game.clearCurrent()
         game.save()
-        return
+        # return
 
-    # elif game.current_action in ('Assassinate', 'Coup', 'Steal'):
     elif action.player2_required:
-
         if request.method == 'GET':
             return
 
@@ -51,7 +53,7 @@ def take_action(request):
             game.player2_turn = True
             game.current_player2 = playerName2
             game.save()
-
+            return
 
     elif game.current_action == "Draw":
         if not game.discardRequired():
@@ -69,7 +71,7 @@ def take_action(request):
                 game.save()
                 return
     player1.save()
-    actionhistory = ActionHistory(name=action.name, player1=player1.playerName, player2=game.current_player2)
+    actionhistory = ActionHistory(name=action.name, player1=request.user.username, player2=game.current_player2)
     actionhistory.save()
     game.save()
     return
@@ -101,13 +103,14 @@ def finish_lose_influence(request):
     prior_action_name, prior_player_name = game.get_prior_action_info()
     if prior_action_name != 'Challenge':
         player1 = game.getPlayerFromPlayerName(game.current_player1)
-        player1.loseCoins(action.coins_required)
+        player1.lose_coins(action.coins_required)
         player1.save()
     cardName = request.POST.get('cardnames', None)
     player2 = game.getPlayerFromPlayerName(game.current_player2)
     player2.lose_influence(cardName)
     player2.save()
     game.clearCurrent()
-    game.nextTurn()
+    if prior_action_name != 'Challenge':
+        game.nextTurn()
     game.save()
     return

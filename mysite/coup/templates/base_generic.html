@@ -58,9 +58,11 @@
                 {% endif %}
                 {% endfor %}
 
-                {% if game.current_player2 %}
                 <br>
+                {% if game.current_player2 and game.current_action != 'Challenge' %}
                 <p>{{game.current_player1}} {{ action_description }} {{game.current_player2}}</p>
+                {% elif game.current_player2 and game.current_action == 'Challenge' %}
+                <p>{{game.challenge_winner}} won the challenge - {{game.challenge_loser}} needs to lose influence</p>
                 {% endif %}
 
             </ul>

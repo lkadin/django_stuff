@@ -22,7 +22,9 @@ class Action(models.Model):
     coins_required = models.IntegerField(default=0)
     url = models.CharField(max_length=20, default='actions')
     pending_required = models.BooleanField(default=False)
-    description = models.CharField(max_length=20, default=name)
+    description = models.CharField(max_length=30, default=name)
+    coins_to_lose_in_challenge = models.IntegerField(default=0)
+    card_required = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -40,7 +42,7 @@ class CardInstance(models.Model):
     shuffle_order = models.IntegerField(null=True)
 
     def __str__(self):
-        return (self.card.cardName)
+        return self.card.cardName
 
     CARD_STATUS = (
         ('U', 'Up'),
@@ -58,11 +60,11 @@ class Player(models.Model):
     def __str__(self):
         return self.playerName
 
-    def addCoins(self, numCoins):
-        self.coins += numCoins
+    def add_coins(self, num_coins):
+        self.coins += num_coins
 
-    def loseCoins(self, numCoins):
-        self.coins -= numCoins
+    def lose_coins(self, num_coins):
+        self.coins -= num_coins
 
     def influence(self):
         cnt = 0
@@ -74,10 +76,10 @@ class Player(models.Model):
     def draw(self):
         self.deck = Deck.objects.all()[0]
         if len(self.hand.filter(status='D')) == 2:
-            self.hand.add(self.deck.drawCard())
-            self.hand.add(self.deck.drawCard())
-        elif len(self.hand.filter(status='D')) == 1:
-            self.hand.add(self.deck.drawCard())
+            self.hand.add(self.deck.draw_card())
+            self.hand.add(self.deck.draw_card())
+        elif len(self.hand.filter(status='D')) < 2:
+            self.hand.add(self.deck.draw_card())
         self.save()
 
     def discard(self, cardname):
@@ -85,7 +87,7 @@ class Player(models.Model):
         self.card_id = Card.objects.filter(cardName=cardname)[0].id
         self.card = self.hand.filter(card_id=self.card_id)[0]
         self.deck = Deck.objects.all()[0]
-        self.deck.returnCard(self.card)
+        self.deck.return_card(self.card)
         self.hand.remove(self.card)
         self.deck.save()
         self.save()
@@ -112,19 +114,19 @@ class Deck(models.Model):
     cards = models.ManyToManyField(CardInstance)
 
     def __str__(self):
-        return ("Deck")
+        return "Deck"
 
     def cardsremaining(self):
         self.cnt = 0
         for self.card in self.cards.all():
-            if self.card.shuffle_order != None:
+            if self.card.shuffle_order is not None:
                 self.cnt += 1
         return self.cnt
 
     def cardsavailable(self):
         self.cardsavail = []
         for self.card in self.cards.all():
-            if self.card.shuffle_order != None:
+            if self.card.shuffle_order is not None:
                 self.cardsavail.append(self.card)
         return self.cardsavail
 
@@ -135,15 +137,16 @@ class Deck(models.Model):
             self.cards.add(ci)
 
     def shuffle(self):
-        for i in range(self.cards.count() - 1, -1, -1):
+        self.cardsleft = CardInstance.objects.exclude(shuffle_order=None)
+        for i in range(self.cardsleft.count() - 1, -1, -1):
             r = random.randint(0, i)
-            self.card1 = self.cards.filter(shuffle_order=i)[0]
-            self.card2 = self.cards.filter(shuffle_order=r)[0]
+            self.card1 = self.cardsleft.filter(shuffle_order=i)[0]
+            self.card2 = self.cardsleft.filter(shuffle_order=r)[0]
             self.card1.shuffle_order, self.card2.shuffle_order = self.card2.shuffle_order, self.card1.shuffle_order
             self.card1.save()
             self.card2.save()
 
-    def drawCard(self):
+    def draw_card(self):
         self.maxcard = CardInstance.objects.all().aggregate(Max('shuffle_order'))
         self.max = self.maxcard['shuffle_order__max']
         self.card = CardInstance.objects.get(shuffle_order=self.max)
@@ -151,7 +154,7 @@ class Deck(models.Model):
         self.card.save()
         return self.card
 
-    def returnCard(self, card):
+    def return_card(self, card):
         self.card = card
         self.maxcard = CardInstance.objects.all().aggregate(Max('shuffle_order'))
         self.max = self.maxcard['shuffle_order__max'] + 1
@@ -169,8 +172,11 @@ class Game(models.Model):
     pending_action = models.BooleanField(default=False)
     player2_turn = models.BooleanField(default=False)
     challenge_in_progress = models.BooleanField(default=False)
+    challenge_winner = models.CharField(max_length=20, null=True, blank=True)
+    challenge_loser = models.CharField(max_length=20, null=True, blank=True)
 
-    def del_card_instances(self):
+    @staticmethod
+    def del_card_instances():
         CardInstance.objects.all().delete()
 
     def build_cards(self):
@@ -191,7 +197,8 @@ class Game(models.Model):
         deck.shuffle()
         deck.save()
         Player.objects.all().delete()
-        self.add_all_players()  #########################This will be replaced by login
+        # todo:replace with lobby /login
+        self.add_all_players()
         self.initialDeal()
 
     def initialDeal(self):
@@ -201,10 +208,11 @@ class Game(models.Model):
         players = Player.objects.all()
         for i in range(self.NUM_OF_CARDS):
             for player in players:
-                player.hand.add(self.deck.drawCard())
+                player.hand.add(self.deck.draw_card())
                 self.deck.save()
 
-    def add_all_players(self):
+    @staticmethod
+    def add_all_players():
         player = Player(playerName="Lee", playerNumber=0)
         player.save()
         player = Player(playerName="Adina", playerNumber=1)
@@ -216,12 +224,10 @@ class Game(models.Model):
 
     def nextTurn(self):
         try:
-            prior_action_name = ActionHistory.objects.all().order_by('-id')[0].name
             prior_player_name = ActionHistory.objects.all().order_by('-id')[0].player1
         except:
-            prior_action_name = None
             prior_player_name = None
-        if not (prior_action_name == 'Challenge' and prior_player_name != self.current_player1):
+        if not (self.challenge_in_progress and prior_player_name != self.current_player1):
             self.whoseTurn = (self.whoseTurn + 1) % 4
             while not Player.objects.get(playerNumber=self.whoseTurn).influence():
                 self.whoseTurn = (self.whoseTurn + 1) % 4
@@ -247,9 +253,11 @@ class Game(models.Model):
         self.pending_action = False
         self.player2_turn = False
         self.challenge_in_progress = False
-        # self.save()
+        self.challenge_winner = None
+        self.challenge_loser = None
 
-    def getPlayerFromPlayerName(self, playerName):
+    @staticmethod
+    def getPlayerFromPlayerName(playerName):
         return Player.objects.get(playerName=playerName)
 
     def discard_cards(self, cards):
@@ -273,6 +281,7 @@ class Game(models.Model):
         return action.player2_required
 
     def lose_influence_required(self):
+        # todo: if only one card left , make this automatic
         if self.current_action in ("Assassinate", "Coup") and self.current_player2:
             self.player2_turn = True
             self.save()
@@ -281,31 +290,36 @@ class Game(models.Model):
             return False
 
     def challenge(self):
-        self.challenge_in_progress = True
-        prior_action_name, prior_player_name = self.get_prior_action_info()
-        prior_player = Player.objects.get(playerName=prior_player_name)
-        current_player = Player.objects.get(playerName=self.current_player1)
 
-        if prior_action_name == "Take 3 coins":
-            if prior_player.is_card_in_hand('Duke'):  # challenge not successful
+        def determine_challenge(self, prior_action):
+            if prior_player.is_card_in_hand(prior_action.card_required):  # challenge not successful
                 self.current_player2 = current_player.playerName
+                self.challenge_loser = current_player.playerName
+                self.challenge_winner = prior_player_name
+                prior_player.discard(prior_action.card_required)
+                deck.shuffle()
+                prior_player.draw()
             else:  # challenge is successful
-                prior_player.loseCoins(3)
+                prior_player.lose_coins(prior_action.coins_to_lose_in_challenge)
+                current_player.add_coins(prior_action.coins_to_lose_in_challenge)
                 prior_player.save()
                 self.current_player2 = prior_player_name
-                self.current_player1 = prior_player_name
-            self.current_action = 'Assassinate'
-            self.save()
-        # if prior_action_name == "Foreign Aid":
-        #     if prior_player.is_card_in_hand('Duke'):  # challenge not successful
-        #         self.current_player2 = current_player.playerName
-        #     else:  # challenge is successful
-        #         self.current_player2 = prior_player_name
-        #         #todo:need to reverse the foreign aid
-        #     self.current_action = 'Assassinate'
-        #     self.save()
+                self.challenge_loser = prior_player_name
+                self.challenge_winner = current_player.playerName
+            self.current_action = 'Challenge'
 
-    def get_prior_action_info(self):
+        self.challenge_in_progress = True
+        prior_action_name, prior_player_name = self.get_prior_action_info()
+        prior_action = Action.objects.get(name=prior_action_name)
+        prior_player = Player.objects.get(playerName=prior_player_name)
+        current_player = Player.objects.get(playerName=self.current_player1)
+        deck = Deck.objects.all()[0]
+
+        if prior_action_name in ("Take 3 coins", "Block Steal", "Steal", "Assassinate"):
+            determine_challenge(self, prior_action)
+
+    @staticmethod
+    def get_prior_action_info():
         try:
             prior_action_name = ActionHistory.objects.all().order_by('-id')[0].name
             prior_player_name = ActionHistory.objects.all().order_by('-id')[0].player1

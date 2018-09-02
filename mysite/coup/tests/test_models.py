@@ -33,10 +33,11 @@ class GameModelTest(TestCase):
         self.assertEqual(player.influence(), 2)
 
     def test_player(self):
+        game = Game.objects.all()[0]
         player = Player.objects.all()[0]
-        player.loseCoins(2)
+        player.lose_coins(2)
         self.assertEqual(player.coins, 0)
-        player.addCoins(3)
+        player.add_coins(3)
         self.assertEqual(player.coins, 3)
         player.draw()
         self.assertEqual(player.cardcount(), 4)

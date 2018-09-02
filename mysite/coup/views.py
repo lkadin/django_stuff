@@ -34,6 +34,7 @@ def startgame(request):
     return redirect(showtable)
 
 def showtable(request):
+    # todo: don't allow challenge yourself
     def get_action():
         prior_action_name, prior_player_name = game.get_prior_action_info()
 
@@ -57,16 +58,16 @@ def showtable(request):
             actions = []
 
         if request.user.get_username() == game.current_player2 and game.current_action == 'Assassinate':
-            actions = Action.objects.filter(name__in=["Lose Influence", "Block"])
+            actions = Action.objects.filter(name__in=["Lose Influence", "Block Assassinate", "Challenge"])
 
         if request.user.get_username() == game.current_player2 and game.current_action in ('Coup', 'Challenge'):
             actions = Action.objects.filter(name__in=["Lose Influence"])
 
         if request.user.get_username() == game.current_player2 and game.current_action == 'Steal':
-            actions = Action.objects.filter(name__in=["Block", "Allow Steal"])
+            actions = Action.objects.filter(name__in=["Block Steal", "Allow Steal", 'Challenge'])
         if not game.current_action:
             try:
-                actions = actions.exclude(name__in=['Block'])
+                actions = actions.exclude(name__in=['Block Steal'])
             except:
                 pass
         if not request.user.get_username():
@@ -94,7 +95,7 @@ def showtable(request):
             request,
             'table.html',
             context={'players': players, 'actions': actions, 'game': game,
-                     'current_player_name': game.currentPlayerName(), 'actionhistory': actionhistory, 'cards': cards,
+                     'current_player_name': request.user.username, 'actionhistory': actionhistory, 'cards': cards,
                      'current_player_coins': current_player_coins, 'action_description': action_description}
         )
     else:
@@ -149,7 +150,8 @@ def actions(request):
 
     game = Game.objects.all()[0]
     if not game.pending_action:
-        game.nextTurn()
+        if game.current_action != 'Challenge':
+            game.nextTurn()
         game.clearCurrent()
         game.save()
         return redirect(showtable)
