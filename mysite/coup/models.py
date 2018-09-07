@@ -73,19 +73,24 @@ class Player(models.Model):
                 cnt += 1
         return cnt
 
-    def draw(self):
+    def draw(self, number_of_cards):
         self.deck = Deck.objects.all()[0]
-        if len(self.hand.filter(status='D')) == 2:
+        self.deck.shuffle()
+        for cards in range(number_of_cards):
             self.hand.add(self.deck.draw_card())
-            self.hand.add(self.deck.draw_card())
-        elif len(self.hand.filter(status='D')) < 2:
-            self.hand.add(self.deck.draw_card())
+        self.save()
+
+    def swap(self, cardname):
+        self.cardname = cardname
+        self.discard(self.cardname)
+        self.draw(1)
         self.save()
 
     def discard(self, cardname):
         self.cardname = cardname
         self.card_id = Card.objects.filter(cardName=cardname)[0].id
-        self.card = self.hand.filter(card_id=self.card_id)[0]
+        self.card = self.hand.filter(card_id=self.card_id)
+        self.card = self.card.filter(status='D')[0]
         self.deck = Deck.objects.all()[0]
         self.deck.return_card(self.card)
         self.hand.remove(self.card)
@@ -225,11 +230,18 @@ class Game(models.Model):
         player.save()
 
     def nextTurn(self):
+
+        # todo:After successful challenge not going to correct player
+        self.player_whose_turn = Player.objects.get(playerNumber=self.whoseTurn)
+        print("WHOSE TURN - {}".format(self.player_whose_turn.playerName))
         try:
-            prior_player_name = ActionHistory.objects.all().order_by('-id')[0].player1
+            prior_player_name, prior_action_name = self.get_prior_action_info()
         except:
             prior_player_name = None
-        if not (self.challenge_in_progress and prior_player_name != self.current_player1):
+        print(self.player_whose_turn.playerName, prior_player_name, prior_action_name, self.current_action,
+              self.current_player2)
+        # if not (self.challenge_in_progress and prior_player_name != self.player_whose_turn.playerName and prior_action_name != "Challenge"):
+        if not (self.current_action == "Challenge" and self.current_player2 != self.player_whose_turn.playerName):
             self.whoseTurn = (self.whoseTurn + 1) % 4
             while not Player.objects.get(playerNumber=self.whoseTurn).influence():
                 self.whoseTurn = (self.whoseTurn + 1) % 4
@@ -285,6 +297,11 @@ class Game(models.Model):
     def lose_influence_required(self):
         # todo: if only one card left , make this automatic
         if self.current_action in ("Assassinate", "Coup") and self.current_player2:
+            player2 = Player.objects.get(playerName=self.current_player2)
+            if player2.influence == 1:
+                print(' I am here')
+                pass
+                # todo: Get ird of last card in hand and move on
             self.player2_turn = True
             self.save()
             return True
@@ -298,9 +315,7 @@ class Game(models.Model):
                 self.current_player2 = current_player.playerName
                 self.challenge_loser = current_player.playerName
                 self.challenge_winner = prior_player_name
-                prior_player.discard(prior_player.is_card_in_hand(prior_action.card_required))
-                deck.shuffle()
-                prior_player.draw()
+                prior_player.swap(prior_player.is_card_in_hand(prior_action.card_required))
             else:  # challenge is successful
                 prior_player.lose_coins(prior_action.coins_to_lose_in_challenge)
                 current_player.add_coins(prior_action.coins_to_lose_in_challenge)
@@ -315,7 +330,7 @@ class Game(models.Model):
         prior_action = Action.objects.get(name=prior_action_name)
         prior_player = Player.objects.get(playerName=prior_player_name)
         current_player = Player.objects.get(playerName=self.current_player1)
-        deck = Deck.objects.all()[0]
+        # deck = Deck.objects.all()[0]
 
         if prior_action_name in (
         "Take 3 coins", "Block Steal", "Steal", "Assassinate", "Block Assassinate", "Block Foreign Aid"):

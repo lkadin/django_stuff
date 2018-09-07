@@ -7,6 +7,8 @@ def take_action(request):
     player1 = Player.objects.get(playerName=game.current_player1)
 
     if action.pending_required and not game.pending_action:
+        if game.current_action == 'Assassinate':
+            player1.lose_coins(3)
         game.pending_action = True
         game.save()
         return
@@ -19,6 +21,7 @@ def take_action(request):
         player1.add_coins(2)
     elif game.current_action == "Take 3 coins":
         player1.add_coins(3)
+
     elif game.current_action == "Block Steal":
         game.clearCurrent()
         game.save()
@@ -66,11 +69,8 @@ def take_action(request):
     elif game.current_action == "Draw":
         if not game.discardRequired():
             player1 = Player.objects.get(playerName=game.current_player1)
-            player1.draw()
-            player1.save()
+            player1.draw(2)
             game.pending_action = True
-            game.save()
-            return
         else:
             discards = request.POST.getlist('cardnames', None)
             if discards:
@@ -117,8 +117,7 @@ def finish_lose_influence(request):
     player2 = game.getPlayerFromPlayerName(game.current_player2)
     player2.lose_influence(cardName)
     player2.save()
+    game.nextTurn()
     game.clearCurrent()
-    if prior_action_name != 'Challenge':
-        game.nextTurn()
     game.save()
     return

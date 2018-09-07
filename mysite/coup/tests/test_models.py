@@ -35,16 +35,30 @@ class GameModelTest(TestCase):
     def test_player(self):
         game = Game.objects.all()[0]
         player = Player.objects.all()[0]
+        # test lose coins
         player.lose_coins(2)
         self.assertEqual(player.coins, 0)
+        # test add coins
         player.add_coins(3)
         self.assertEqual(player.coins, 3)
-        player.draw()
+        # test draw 2 crads
+        player.draw(2)
         self.assertEqual(player.cardcount(), 4)
         cards = player.hand.all()
+        #test discard
         player.discard(cards[0])
         self.assertEqual(player.cardcount(), 3)
         player.discard(cards[0])
         self.assertEqual(player.cardcount(), 2)
+        #test lose influence
         player.lose_influence(cards[0].card.cardName)
         self.assertEqual(player.influence(), 1)
+        # test draw and discard after lose influence
+        player.draw(2)
+        self.assertEqual(player.cardcount(), 4)
+        self.assertEqual(player.hand.filter(status='D').count(), 3)
+        player.discard(player.hand.filter(status='D')[0])
+        self.assertEqual(player.hand.filter(status='D').count(), 2)
+        player.discard(player.hand.filter(status='D')[0])
+        self.assertEqual(player.hand.filter(status='D').count(), 1)
+        self.assertEqual(player.cardcount(), 2)

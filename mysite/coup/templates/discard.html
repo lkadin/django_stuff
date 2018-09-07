@@ -6,7 +6,7 @@
 </head>
 <body>
 
-<form id="actions" method="post"> {% csrf_token %}
+<form id="actions" method="post" onsubmit="return CheckBoxCount(this)" ;> {% csrf_token %}
     {% for card in cards %}
     {{ card.card.cardName }}
     <input type="checkbox" name="cardnames" value={{ card.card.cardName }}>
@@ -15,29 +15,28 @@
 
 
         <p> Which cards do you want to discard?</p>
-        <input type="submit" value="Submit">
+        <input type="submit" id="test" value="Submit">
 </form>
 
 <script type="text/javascript">
-function checkboxlimit(checkgroup, limit){
-	var checkgroup=checkgroup
-	var limit=limit
-	for (var i=0; i<checkgroup.length; i++){
-		checkgroup[i].onclick=function(){
-		var checkedcount=0
-		for (var i=0; i<checkgroup.length; i++)
-			checkedcount+=(checkgroup[i].checked)? 1 : 0
-		if (checkedcount>limit){
-			alert("You can only select a maximum of "+limit+" checkboxes")
-			this.checked=false
-			}
-		}
-	}
-}
 
-checkboxlimit(document.forms.actions.cardnames, 2)
+    function CheckBoxCount() {
+        var inputList = document.getElementsByTagName("input");
+        var numChecked = 0;
 
+        for (var i = 0; i < inputList.length; i++) {
+            if (inputList[i].type == "checkbox" && inputList[i].checked) {
+                numChecked = numChecked + 1;
+            }
+        }
+        if (numChecked < 2) {
+            alert("You must pick 2 !"); return false;
+        } else if (numChecked > 2) {
+            alert("You must pick  2 !"); return false;
+        }
+        return true;
 
+    }
 </script>
 </body>
 </html>

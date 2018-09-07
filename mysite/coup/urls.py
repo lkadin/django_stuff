@@ -32,3 +32,6 @@ urlpatterns += [
 urlpatterns += [
     path('loseinfluence', views.loseinfluence, name='loseinfluence'),
 ]
+urlpatterns += [
+    path('lose_one_card', views.lose_one_card, name='lose_one_card'),
+]

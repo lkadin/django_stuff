@@ -35,7 +35,6 @@ def startgame(request):
 
 def showtable(request):
     # todo: don't allow challenge yourself
-    # todo: refactor table.html
     def get_action():
         prior_action_name, prior_player_name = game.get_prior_action_info()
 
@@ -133,8 +132,7 @@ def initialdeal(request):
     )
 
 def shuffle(request):
-    deck = Deck.objects.get(id=210)
-    # deck=decks[0]
+    deck = Deck.objects.get(id=1)
     deck.shuffle()
     deck.save()
     return render(
@@ -157,15 +155,14 @@ def actions(request):
 
     game = Game.objects.all()[0]
     if not game.pending_action:
-        if game.current_action != 'Challenge':
-            game.nextTurn()
+        game.nextTurn()
         game.clearCurrent()
         game.save()
         return redirect(showtable)
     else:
         get_initial_action_data(request)
 
-        if game.discardRequired():
+        while game.discardRequired():
             player = game.getPlayerFromPlayerName(game.current_player1)
             return render(request, 'discard.html', {'player': player, 'cards': player.hand.filter(status='D')})
 
@@ -181,3 +178,10 @@ def actions(request):
             return render(request, 'player.html', {'players': living})
 
         return redirect(showtable)
+
+
+def lose_one_card(request):
+    for player in Player.objects.all():
+        cardname = player.hand.all()[0].card.cardName
+        player.lose_influence(cardname)
+    return redirect(showtable)
