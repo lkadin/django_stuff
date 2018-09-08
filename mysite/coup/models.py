@@ -14,6 +14,8 @@ class ActionHistory(models.Model):
     tran_date = models.DateTimeField(auto_now_add=True, blank=True)
     player1 = models.CharField(max_length=20, default="Lee")
     player2 = models.CharField(max_length=20, null=True, blank=True)
+    challenge_winner = models.CharField(max_length=20, null=True, blank=True)
+    challenge_loser = models.CharField(max_length=20, null=True, blank=True)
 
 
 class Action(models.Model):
@@ -90,7 +92,7 @@ class Player(models.Model):
         self.cardname = cardname
         self.card_id = Card.objects.filter(cardName=cardname)[0].id
         self.card = self.hand.filter(card_id=self.card_id)
-        self.card = self.card.filter(status='D')[0]
+        self.card = self.hand.filter(status='D')[0]
         self.deck = Deck.objects.all()[0]
         self.deck.return_card(self.card)
         self.hand.remove(self.card)
@@ -113,7 +115,8 @@ class Player(models.Model):
         card_names = card_name.split(',')
         for card in self.hand.all():
             if card.card.cardName in card_names:
-                return card.card.cardName
+                if card.status == 'D':
+                    return card.card.cardName
 
 
 class Deck(models.Model):
@@ -230,18 +233,11 @@ class Game(models.Model):
         player.save()
 
     def nextTurn(self):
-
-        # todo:After successful challenge not going to correct player
         self.player_whose_turn = Player.objects.get(playerNumber=self.whoseTurn)
-        print("WHOSE TURN - {}".format(self.player_whose_turn.playerName))
-        try:
-            prior_player_name, prior_action_name = self.get_prior_action_info()
-        except:
-            prior_player_name = None
-        print(self.player_whose_turn.playerName, prior_player_name, prior_action_name, self.current_action,
-              self.current_player2)
-        # if not (self.challenge_in_progress and prior_player_name != self.player_whose_turn.playerName and prior_action_name != "Challenge"):
-        if not (self.current_action == "Challenge" and self.current_player2 != self.player_whose_turn.playerName):
+        # if not (self.current_action == "Challenge" and self.current_player2 == self.currentPlayerName()):
+        print(self.current_action, self.challenge_loser, self.currentPlayerName())
+        if self.current_action != "Challenge" or (
+                self.current_action == 'Challenge' and self.challenge_loser == self.currentPlayerName()):
             self.whoseTurn = (self.whoseTurn + 1) % 4
             while not Player.objects.get(playerNumber=self.whoseTurn).influence():
                 self.whoseTurn = (self.whoseTurn + 1) % 4
@@ -311,8 +307,9 @@ class Game(models.Model):
     def challenge(self):
 
         def determine_challenge(self, prior_action):
+            self.current_player2 = prior_player_name
             if prior_player.is_card_in_hand(prior_action.card_required):  # challenge not successful
-                self.current_player2 = current_player.playerName
+                # self.current_player2 = current_player.playerName
                 self.challenge_loser = current_player.playerName
                 self.challenge_winner = prior_player_name
                 prior_player.swap(prior_player.is_card_in_hand(prior_action.card_required))
@@ -320,7 +317,7 @@ class Game(models.Model):
                 prior_player.lose_coins(prior_action.coins_to_lose_in_challenge)
                 current_player.add_coins(prior_action.coins_to_lose_in_challenge)
                 prior_player.save()
-                self.current_player2 = prior_player_name
+                # self.current_player2 = prior_player_name
                 self.challenge_loser = prior_player_name
                 self.challenge_winner = current_player.playerName
             self.current_action = 'Challenge'
@@ -330,10 +327,9 @@ class Game(models.Model):
         prior_action = Action.objects.get(name=prior_action_name)
         prior_player = Player.objects.get(playerName=prior_player_name)
         current_player = Player.objects.get(playerName=self.current_player1)
-        # deck = Deck.objects.all()[0]
 
         if prior_action_name in (
-        "Take 3 coins", "Block Steal", "Steal", "Assassinate", "Block Assassinate", "Block Foreign Aid"):
+                "Take 3 coins", "Block Steal", "Steal", "Assassinate", "Block Assassinate", "Block Foreign Aid"):
             # todo:Block assassinate challenge loss takes you out of the game
             determine_challenge(self, prior_action)
 

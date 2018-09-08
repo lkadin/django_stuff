@@ -69,6 +69,9 @@ def showtable(request):
         if request.user.get_username() == game.current_player2 and game.current_action in ('Coup', 'Challenge'):
             actions = Action.objects.filter(name__in=["Lose Influence"])
 
+        if request.user.get_username() == game.challenge_loser and game.current_action in ('Challenge'):
+            actions = Action.objects.filter(name__in=["Lose Influence"])
+
         if request.user.get_username() == game.current_player2 and game.current_action == 'Steal':
             actions = Action.objects.filter(name__in=["Block Steal", "Allow Steal", 'Challenge'])
         if not game.current_action:

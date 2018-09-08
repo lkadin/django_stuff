@@ -79,7 +79,8 @@ def take_action(request):
                 game.save()
                 return
     player1.save()
-    actionhistory = ActionHistory(name=action.name, player1=request.user.username, player2=game.current_player2)
+    actionhistory = ActionHistory(name=action.name, player1=request.user.username, player2=game.current_player2,
+                                  challenge_winner=game.challenge_winner, challenge_loser=game.challenge_loser)
     actionhistory.save()
     game.save()
     return
@@ -109,7 +110,8 @@ def finish_lose_influence(request):
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     prior_action_name, prior_player_name = game.get_prior_action_info()
-    if prior_action_name != 'Challenge':
+    if action.name != 'Challenge':
+        # if prior_action_name != 'Challenge':
         player1 = game.getPlayerFromPlayerName(game.current_player1)
         player1.lose_coins(action.coins_required)
         player1.save()
@@ -117,6 +119,9 @@ def finish_lose_influence(request):
     player2 = game.getPlayerFromPlayerName(game.current_player2)
     player2.lose_influence(cardName)
     player2.save()
+    if action.name == "Challenge":
+        game.current_player2 = prior_player_name
+        game.save()
     game.nextTurn()
     game.clearCurrent()
     game.save()
