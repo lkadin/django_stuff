@@ -73,6 +73,7 @@ def take_action(request):
             game.pending_action = True
         else:
             discards = request.POST.getlist('cardnames', None)
+
             if discards:
                 game.discard_cards(discards)
                 game.pending_action = False
@@ -110,16 +111,16 @@ def finish_lose_influence(request):
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     prior_action_name, prior_player_name = game.get_prior_action_info()
-    if action.name != 'Challenge':
-        # if prior_action_name != 'Challenge':
-        player1 = game.getPlayerFromPlayerName(game.current_player1)
-        player1.lose_coins(action.coins_required)
-        player1.save()
     cardName = request.POST.get('cardnames', None)
-    player2 = game.getPlayerFromPlayerName(game.current_player2)
-    player2.lose_influence(cardName)
-    player2.save()
+    if action.name != 'Challenge':
+        player2 = game.getPlayerFromPlayerName(game.current_player2)
+        player2.lose_influence(cardName)
+        player2.lose_coins(action.coins_required)
+        player2.save()
     if action.name == "Challenge":
+        loser = game.getPlayerFromPlayerName(game.challenge_loser)
+        loser.lose_influence(cardName)
+        loser.save()
         game.current_player2 = prior_player_name
         game.save()
     game.nextTurn()

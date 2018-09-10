@@ -150,7 +150,10 @@ def loseinfluence(request):
         return redirect(showtable)
     else:
         game = Game.objects.all()[0]
-        player = game.getPlayerFromPlayerName(game.current_player2)
+        if game.current_action == 'Challenge':
+            player = game.getPlayerFromPlayerName(game.challenge_loser)
+        else:
+            player = game.getPlayerFromPlayerName(game.current_player2)
         return render(request, 'lose_influence.html', {'player': player, 'cards': player.hand.filter(status='D')})
 
 def actions(request):
