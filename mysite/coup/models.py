@@ -104,7 +104,7 @@ class Player(models.Model):
     def lose_influence(self, cardname):
         self.cardname = cardname
         self.card_id = Card.objects.filter(cardName=cardname)[0].id
-        self.card = self.hand.filter(card_id=self.card_id).card.filter(status='D')[0]
+        self.card = self.hand.filter(card_id=self.card_id).filter(status='D')[0]
         self.card.status = 'U'
         self.card.save()
         self.save()
