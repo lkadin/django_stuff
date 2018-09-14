@@ -1,7 +1,7 @@
 from .models import Player, Card, Deck, Action, Game, CardInstance, ActionHistory
 
 
-def take_action(request):
+def take_action():
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
@@ -25,6 +25,7 @@ def take_action(request):
     elif game.current_action == "Block Steal":
         game.clearCurrent()
         game.save()
+
     elif game.current_action == "Block Foreign Aid":
         prior_action_name, prior_player_name = game.get_prior_action_info()
         prior_player = Player.objects.get(playerName=prior_player_name)
@@ -33,9 +34,11 @@ def take_action(request):
         prior_player.save()
         game.clearCurrent()
         game.save()
+
     elif game.current_action == "Block Assassinate":
         game.clearCurrent()
         game.save()
+
     elif game.current_action == 'Challenge':
         if not game.challenge_in_progress:
             game.challenge()
@@ -54,17 +57,17 @@ def take_action(request):
         game.save()
         # return
 
-    elif action.player2_required:
-        if request.method == 'GET':
-            return
+    # elif action.player2_required:
+    #     if request.method == 'GET':
+    #         return
 
-        playerName2 = game.current_player2
-        if not playerName2:
-            playerName2 = request.POST.get('name', None)
-            game.player2_turn = True
-            game.current_player2 = playerName2
-            game.save()
-            return
+    # playerName2 = game.current_player2
+    # if not playerName2:
+    #     playerName2 = request.POST.get('name', None)
+    #     game.player2_turn = True
+    #     game.current_player2 = playerName2
+    #     game.save()
+    #     return
 
     elif game.current_action == "Draw":
         if not game.discardRequired():
@@ -72,15 +75,17 @@ def take_action(request):
             player1.draw(2)
             game.pending_action = True
         else:
-            discards = request.POST.getlist('cardnames', None)
+            discards = game.discards.split()
+            print(discards)
 
             if discards:
                 game.discard_cards(discards)
                 game.pending_action = False
                 game.save()
                 return
+
     player1.save()
-    actionhistory = ActionHistory(name=action.name, player1=request.user.username, player2=game.current_player2,
+    actionhistory = ActionHistory(name=action.name, player1=game.currentPlayerName(), player2=game.current_player2,
                                   challenge_winner=game.challenge_winner, challenge_loser=game.challenge_loser)
     actionhistory.save()
     game.save()
@@ -88,9 +93,25 @@ def take_action(request):
 
 
 def get_initial_action_data(request):
+    game = Game.objects.all()[0]
     if request.method == 'GET':
         getrequest(request)
-    take_action(request)
+
+    if request.method == 'POST':
+        discards = request.POST.getlist('cardnames', None)
+        if discards:
+            discard_str = ''
+            for card in discards:
+                discard_str += card + " "
+            game.discards = discard_str
+            game.save()
+        playerName2 = request.POST.get('name', None)
+        if playerName2:
+            game.player2_turn = True
+            game.current_player2 = playerName2
+            game.save()
+
+    take_action()
     return
 
 
@@ -107,16 +128,17 @@ def getrequest(request):
     return
 
 
-def finish_lose_influence(request):
+def finish_lose_influence(cardName):
     game = Game.objects.all()[0]
     action = Action.objects.get(name=game.current_action)
     prior_action_name, prior_player_name = game.get_prior_action_info()
-    cardName = request.POST.get('cardnames', None)
     if action.name != 'Challenge':
         player2 = game.getPlayerFromPlayerName(game.current_player2)
         player2.lose_influence(cardName)
-        player2.lose_coins(action.coins_required)
+        print(player2.playerName, player2.coins)
+        # player2.lose_coins(action.coins_required)
         player2.save()
+
     if action.name == "Challenge":
         loser = game.getPlayerFromPlayerName(game.challenge_loser)
         loser.lose_influence(cardName)
