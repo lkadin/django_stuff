@@ -6,14 +6,30 @@ def take_action():
     action = Action.objects.get(name=game.current_action)
     player1 = Player.objects.get(playerName=game.current_player1)
 
+    print(game.current_action, game.pending_action)
+    if game.current_action == 'Assassinate' and not game.pending_action:
+        player1.lose_coins(3)
+        player1.save()
+
+    if game.current_action == "Draw":
+        if not game.discardRequired():
+            player1 = Player.objects.get(playerName=game.current_player1)
+            player1.draw(2)
+            game.pending_action = True
+        else:
+            discards = game.discards.split()
+            if discards:
+                game.discard_cards(discards)
+                game.pending_action = False
+                game.save()
+                return
+
     if action.pending_required and not game.pending_action:
-        if game.current_action == 'Assassinate':
-            player1.lose_coins(3)
         game.pending_action = True
         game.save()
         return
 
-    game = Game.objects.all()[0]
+    # game = Game.objects.all()[0]
 
     if game.current_action == "Income":
         player1.add_coins(1)
@@ -21,6 +37,7 @@ def take_action():
         player1.add_coins(2)
     elif game.current_action == "Take 3 coins":
         player1.add_coins(3)
+
 
     elif game.current_action == "Block Steal":
         game.clearCurrent()
@@ -69,20 +86,7 @@ def take_action():
     #     game.save()
     #     return
 
-    elif game.current_action == "Draw":
-        if not game.discardRequired():
-            player1 = Player.objects.get(playerName=game.current_player1)
-            player1.draw(2)
-            game.pending_action = True
-        else:
-            discards = game.discards.split()
-            print(discards)
 
-            if discards:
-                game.discard_cards(discards)
-                game.pending_action = False
-                game.save()
-                return
 
     player1.save()
     actionhistory = ActionHistory(name=action.name, player1=game.currentPlayerName(), player2=game.current_player2,
